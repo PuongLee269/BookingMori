@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lịch Đặt Phòng</title>
+</head>
+
+<body>
+
+    <!-- TOP NAV ICONS -->
+    <header class="top-nav">
+        <div class="top-nav__icons">
+            <button class="icon-btn"><span>📅</span></button>
+            <button class="icon-btn"><span>💲</span></button>
+            <button class="icon-btn"><span>⚙️</span></button>
+            <button class="icon-btn"><span>📁</span></button>
+        </div>
+    </header>
+
+
+    <!-- DATE PICKER BLOCK -->
+    <section class="date-selector">
+
+        <button class="date-selector__arrow date-selector__arrow--left">〈</button>
+
+        <div class="date-selector__list">
+            <div class="date-item date-item--active">
+                <span class="date-number">20</span>
+                <span class="dot"></span>
+            </div>
+
+            <div class="date-item">
+                <span class="date-number">21</span>
+            </div>
+
+            <div class="date-item">
+                <span class="date-number">22</span>
+            </div>
+
+            <div class="date-item">
+                <span class="date-number">23</span>
+            </div>
+        </div>
+
+        <button class="date-selector__arrow date-selector__arrow--right">〉</button>
+
+    </section>
+
+
+    <!-- BOOKING LIST -->
+    <section class="booking-list">
+
+        <!-- 1 booking item -->
+        <div class="booking-item">
+            <div class="booking-item__name">Nguyễn Văn A</div>
+
+            <div class="booking-item__row">
+                <div class="booking-item__time">8h – 10h</div>
+                <div class="booking-item__status booking-item__status--paid">✔</div>
+            </div>
+        </div>
+
+
+        <!-- 2nd booking -->
+        <div class="booking-item">
+            <div class="booking-item__name">Me.mori Class</div>
+
+            <div class="booking-item__row">
+                <div class="booking-item__time">18h – 20h</div>
+                <div class="booking-item__status booking-item__status--unpaid">✖</div>
+            </div>
+        </div>
+
+    </section>
+
+
+    <!-- FLOATING ADD BUTTON -->
+    <button class="add-btn">＋</button>
+
+</body>
+</html>
