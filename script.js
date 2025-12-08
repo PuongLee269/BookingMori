@@ -77,13 +77,23 @@ const costListEl = document.getElementById("cost-list");
 const addBookingBtn = document.getElementById("add-booking-btn");
 
 // ====== STATE ======
-const TOTAL_DAYS = 14; // số ngày hiển thị trong slider
+// Số ô hiển thị trên thanh ngày
 const VISIBLE_DAYS = 4;
 
-const dates = createDateArray(TOTAL_DAYS);
-let startIndex = 0; // index bắt đầu cho thanh trượt
-let selectedDateISO = dates[0].iso; // ngày đang chọn
+// stripOffset = ô đầu tiên lệch bao nhiêu ngày so với HÔM NAY
+// 0 = hôm nay, 1 = ngày mai, -1 = hôm qua, ...
+let stripOffset = 0;
+
+// ngày đang chọn (dùng ISO yyyy-mm-dd)
+let selectedDateISO = todayOffsetISO(0);
+
+// id booking đang xem chi tiết
 let currentBookingId = null;
+
+// bảng thứ
+const WEEKDAYS = [
+    "CN", "T2", "T3", "T4", "T5", "T6", "T7"
+];
 
 // ====== INIT ======
 renderDateStrip();
@@ -105,8 +115,8 @@ tabButtons.forEach(btn => {
 });
 
 function showScreen(tab) {
-    // mặc định ẩn tất cả
-    [screenBooking, screenBookingDetail, screenFinance, screenProduction].forEach(s => s.classList.remove("is-active"));
+    [screenBooking, screenBookingDetail, screenFinance, screenProduction]
+        .forEach(s => s.classList.remove("is-active"));
 
     if (tab === "booking") {
         screenBooking.classList.add("is-active");
@@ -117,47 +127,67 @@ function showScreen(tab) {
     }
 }
 
-// ====== DATE STRIP RENDER ======
+// ====== DATE STRIP (KHÔNG GIỚI HẠN) ======
 datePrevBtn.addEventListener("click", () => {
-    if (startIndex > 0) {
-        startIndex--;
-        renderDateStrip();
-    }
+    stripOffset--;          // lùi 1 ngày
+    renderDateStrip();
+    // nếu selectedDate đang ngoài 4 ô hiển thị thì auto chọn ô đầu
+    ensureSelectedDateVisible();
+    renderBookingList();
 });
+
 dateNextBtn.addEventListener("click", () => {
-    if (startIndex + VISIBLE_DAYS < dates.length) {
-        startIndex++;
-        renderDateStrip();
-    }
+    stripOffset++;          // tiến 1 ngày
+    renderDateStrip();
+    ensureSelectedDateVisible();
+    renderBookingList();
 });
 
 function renderDateStrip() {
     dateListEl.innerHTML = "";
-    const slice = dates.slice(startIndex, startIndex + VISIBLE_DAYS);
 
-    slice.forEach(d => {
+    for (let i = 0; i < VISIBLE_DAYS; i++) {
+        const info = getDateInfoFromOffset(stripOffset + i);
         const pill = document.createElement("div");
         pill.className = "date-pill";
-        if (d.iso === selectedDateISO) pill.classList.add("is-active");
-        if (d.isToday) pill.classList.add("is-today");
+        if (info.iso === selectedDateISO) pill.classList.add("is-active");
+        if (info.isToday) pill.classList.add("is-today");
 
         pill.innerHTML = `
-            <div class="date-pill__number">${d.day}</div>
-            <div class="date-pill__weekday">${d.weekdayShort}</div>
+            <div class="date-pill__number">${info.day}</div>
+            <div class="date-pill__weekday">${info.weekdayShort}</div>
             <div class="date-pill__dot"></div>
         `;
 
         pill.addEventListener("click", () => {
-            selectedDateISO = d.iso;
+            selectedDateISO = info.iso;
             renderDateStrip();
             renderBookingList();
         });
 
         dateListEl.appendChild(pill);
-    });
+    }
 
-    datePrevBtn.disabled = startIndex === 0;
-    dateNextBtn.disabled = startIndex + VISIBLE_DAYS >= dates.length;
+    // không disable mũi tên nữa → vô hạn theo cảm nhận người dùng
+    datePrevBtn.disabled = false;
+    dateNextBtn.disabled = false;
+}
+
+// Khi kéo thanh ngày quá xa, đảm bảo selectedDate vẫn nằm trong 4 ô;
+// nếu không thì set selectedDate = ô đầu tiên
+function ensureSelectedDateVisible() {
+    let isVisible = false;
+    for (let i = 0; i < VISIBLE_DAYS; i++) {
+        const info = getDateInfoFromOffset(stripOffset + i);
+        if (info.iso === selectedDateISO) {
+            isVisible = true;
+            break;
+        }
+    }
+    if (!isVisible) {
+        const first = getDateInfoFromOffset(stripOffset);
+        selectedDateISO = first.iso;
+    }
 }
 
 // ====== BOOKING LIST RENDER ======
@@ -208,7 +238,6 @@ function openBookingDetail(id) {
     detailHasVATEl.checked = booking.hasVAT;
     detailNeedSupportEl.checked = booking.needSupport;
 
-    // chuyển sang màn detail nhưng vẫn giữ tab booking đang active
     screenBooking.classList.remove("is-active");
     screenBookingDetail.classList.add("is-active");
 }
@@ -218,20 +247,17 @@ backToBookingBtn.addEventListener("click", () => {
     screenBooking.classList.add("is-active");
 });
 
-// xác nhận thanh toán
 markPaidBtn.addEventListener("click", () => {
     if (!currentBookingId) return;
     const booking = bookings.find(b => b.id === currentBookingId);
     if (!booking) return;
 
-    // cập nhật thông tin từ form
     booking.notes = detailNotesEl.value.trim();
     booking.price = Number(detailPriceEl.value) || 0;
     booking.hasVAT = detailHasVATEl.checked;
     booking.needSupport = detailNeedSupportEl.checked;
     booking.isPaid = true;
 
-    // cập nhật UI
     renderBookingList();
     updateFinancePanel();
     updateChart();
@@ -265,12 +291,17 @@ function updateChart() {
         revenueByDate[b.date] = (revenueByDate[b.date] || 0) + (Number(b.price) || 0);
     });
 
-    // max để scale chiều cao
     let maxRevenue = 0;
     Object.values(revenueByDate).forEach(v => { if (v > maxRevenue) maxRevenue = v; });
     if (maxRevenue === 0) maxRevenue = 1;
 
-    dates.slice(0, VISIBLE_DAYS).forEach(d => {
+    // vẽ 4 cột doanh thu từ hôm nay trở đi
+    const chartDates = [];
+    for (let i = 0; i < VISIBLE_DAYS; i++) {
+        chartDates.push(getDateInfoFromOffset(i));
+    }
+
+    chartDates.forEach(d => {
         const value = revenueByDate[d.iso] || 0;
         const heightPercent = Math.round((value / maxRevenue) * 100);
 
@@ -347,30 +378,28 @@ function todayOffsetISO(offset) {
     return d.toISOString().slice(0, 10);
 }
 
-function createDateArray(totalDays) {
-    const arr = [];
-    const weekdays = ["Chủ nhật", "Thứ hai", "Thứ ba", "Thứ tư", "Thứ năm", "Thứ sáu", "Thứ bảy"];
+// tính thông tin 1 ngày dựa trên offset so với hôm nay
+function getDateInfoFromOffset(offset) {
+    const base = new Date();
+    base.setHours(0,0,0,0);
+    base.setDate(base.getDate() + offset);
+
+    const iso = base.toISOString().slice(0,10);
     const todayISO = todayOffsetISO(0);
 
-    for (let i = 0; i < totalDays; i++) {
-        const d = new Date();
-        d.setDate(d.getDate() + i);
-        const iso = d.toISOString().slice(0, 10);
-        arr.push({
-            iso,
-            day: d.getDate(),
-            weekdayShort: weekdays[d.getDay()].replace("Thứ ", "T").replace("Chủ nhật", "CN"),
-            isToday: iso === todayISO
-        });
-    }
-    return arr;
+    return {
+        iso,
+        day: base.getDate(),
+        weekdayShort: WEEKDAYS[base.getDay()],
+        isToday: iso === todayISO
+    };
 }
 
 function formatCurrency(value) {
     return (Number(value) || 0).toLocaleString("vi-VN") + " đ";
 }
 
-// demo: nút + chỉ báo
+// demo: nút + hiện thông báo
 addBookingBtn.addEventListener("click", () => {
     alert("Bản demo: Nút + sẽ được nối với Google Form / Trang tính ở bước sau.");
 });
