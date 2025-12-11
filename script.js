@@ -88,6 +88,10 @@ const newPriceEl = document.getElementById("new-price");
 const newHasVATEl = document.getElementById("new-has-vat");
 const newNeedSupportEl = document.getElementById("new-need-support");
 const newIsPaidEl = document.getElementById("new-is-paid");
+const recurrenceInputs = bookingForm.querySelectorAll("input[name='recurrence']");
+const newRepeatWeekdayEl = document.getElementById("new-repeat-weekday");
+const newRepeatMonthdayEl = document.getElementById("new-repeat-monthday");
+const newRepeatCountEl = document.getElementById("new-repeat-count");
 
 // ====== STATE ======
 // Số ô hiển thị trên thanh ngày
@@ -462,7 +466,15 @@ bookingForm.addEventListener("submit", (e) => {
         return;
     }
 
-    const newBooking = {
+    const recurrence = getSelectedRecurrence();
+    const repeatCount = Math.max(0, Number(newRepeatCountEl?.value) || 0);
+    const hasRepeatCountField = Boolean(newRepeatCountEl);
+    if (recurrence !== "once" && hasRepeatCountField && repeatCount === 0) {
+        alert("Nhập số tuần/tháng muốn lặp thêm.");
+        newRepeatCountEl?.focus();
+        return;
+    }
+    const baseBooking = {
         id: Date.now(),
         date: selectedDateISO,
         name,
@@ -475,9 +487,105 @@ bookingForm.addEventListener("submit", (e) => {
         isPaid: newIsPaidEl.checked
     };
 
-    bookings.push(newBooking);
+    const resolvedRepeatCount = recurrence === "once" ? 0 : (repeatCount || 4);
+    const bookingsToAdd = buildRecurringBookings(baseBooking, recurrence, resolvedRepeatCount);
+
+    const conflict = bookingsToAdd.find(b => hasTimeConflict(b, [...bookings, ...bookingsToAdd.filter(x => x !== b)]));
+    if (conflict) {
+        alert(`Trùng giờ với lịch đã có vào ${conflict.date}. Vui lòng chọn giờ khác.`);
+        return;
+    }
+
+    bookings.push(...bookingsToAdd);
     closeBookingModal();
     renderBookingList();
     updateFinancePanel();
     updateChart();
 });
+
+function getSelectedRecurrence() {
+    const selected = Array.from(recurrenceInputs).find(r => r.checked);
+    return selected?.value || "once";
+}
+
+function buildRecurringBookings(baseBooking, recurrence, repeatCount) {
+    const list = [baseBooking];
+
+    if (recurrence === "weekly") {
+        const weekdayValue = newRepeatWeekdayEl?.value || "monday";
+        const weekday = mapWeekdayValueToNumber(weekdayValue);
+        const dates = generateWeeklyDates(baseBooking.date, weekday, repeatCount || 0);
+        dates.forEach((date, idx) => {
+            list.push({ ...baseBooking, id: baseBooking.id + idx + 1, date });
+        });
+    } else if (recurrence === "monthly") {
+        const monthDay = Math.max(1, Math.min(31, Number(newRepeatMonthdayEl?.value) || 1));
+        const dates = generateMonthlyDates(baseBooking.date, monthDay, repeatCount || 0);
+        dates.forEach((date, idx) => {
+            list.push({ ...baseBooking, id: baseBooking.id + idx + 1, date });
+        });
+    }
+
+    return list;
+}
+
+function mapWeekdayValueToNumber(value) {
+    const map = {
+        sunday: 0,
+        monday: 1,
+        tuesday: 2,
+        wednesday: 3,
+        thursday: 4,
+        friday: 5,
+        saturday: 6
+    };
+    return map[value] ?? 1;
+}
+
+function generateWeeklyDates(baseDateISO, targetWeekday, repeatCount) {
+    const dates = [];
+    const baseDate = new Date(baseDateISO);
+
+    let cursor = new Date(baseDate);
+    for (let i = 0; i < repeatCount; i++) {
+        const diff = (targetWeekday - cursor.getDay() + 7) % 7 || 7;
+        cursor = new Date(cursor);
+        cursor.setDate(cursor.getDate() + diff);
+        dates.push(cursor.toISOString().slice(0, 10));
+    }
+
+    return dates;
+}
+
+function generateMonthlyDates(baseDateISO, targetDay, repeatCount) {
+    const dates = [];
+    const baseDate = new Date(baseDateISO);
+
+    for (let i = 1; i <= repeatCount; i++) {
+        const monthDate = new Date(baseDate);
+        monthDate.setDate(1);
+        monthDate.setMonth(monthDate.getMonth() + i);
+        const daysInMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
+        monthDate.setDate(Math.min(targetDay, daysInMonth));
+        dates.push(monthDate.toISOString().slice(0, 10));
+    }
+
+    return dates;
+}
+
+function hasTimeConflict(booking, existingList) {
+    return existingList.some(b => {
+        if (b.date !== booking.date || b.id === booking.id) return false;
+        const startA = timeToMinutes(booking.start);
+        const endA = timeToMinutes(booking.end);
+        const startB = timeToMinutes(b.start);
+        const endB = timeToMinutes(b.end);
+
+        return startA < endB && endA > startB;
+    });
+}
+
+function timeToMinutes(timeStr) {
+    const [h, m] = timeStr.split(":").map(Number);
+    return (h || 0) * 60 + (m || 0);
+}
