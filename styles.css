@@ -369,6 +369,92 @@ body.app-body {
     box-shadow: 0 8px 20px rgba(87, 120, 62, 0.55);
     width: 100%;
 }
+.secondary-btn {
+    border: 1px solid var(--accent-dark);
+    border-radius: 999px;
+    padding: 10px 16px;
+    background: #f7fbe9;
+    color: var(--accent-dark);
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(87, 120, 62, 0.2);
+}
+
+/* MODAL */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(17, 32, 12, 0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 20;
+}
+
+.modal-overlay.is-open {
+    display: flex;
+}
+
+.modal-card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--bg-card);
+    border-radius: 20px;
+    padding: 18px 18px 14px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    animation: fadeIn 0.2s ease-out;
+}
+
+.modal-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.modal-card__header h3 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.modal-close {
+    border: none;
+    background: #eff7dc;
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 16px;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+.modal-card__date {
+    margin: 8px 0 12px;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.field--inline-group {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.modal-actions .primary-btn,
+.modal-actions .secondary-btn {
+    width: 50%;
+}
+
+.checkbox--strong span {
+    font-weight: 600;
+}
 
 /* FINANCE */
 .finance-card h2 {

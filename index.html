@@ -157,6 +157,67 @@
         </section>
 
     </main>
+
+    <!-- Modal thêm booking mới -->
+    <div class="modal-overlay" id="booking-modal-overlay">
+        <div class="modal-card">
+            <div class="modal-card__header">
+                <h3>Thêm lịch đặt mới</h3>
+                <button class="modal-close" id="booking-modal-close" aria-label="Đóng">✕</button>
+            </div>
+
+            <p class="modal-card__date">Ngày đang chọn: <span id="modal-selected-date"></span></p>
+
+            <form id="booking-form" class="modal-form">
+                <label class="field">
+                    <span class="field__label">Tên khách / tổ chức *</span>
+                    <input type="text" id="new-name" class="field__input" placeholder="Nhập tên" required>
+                </label>
+
+                <div class="field field--inline-group">
+                    <label class="field field--inline">
+                        <span class="field__label">Giờ bắt đầu *</span>
+                        <input type="time" id="new-start" class="field__input" required>
+                    </label>
+                    <label class="field field--inline">
+                        <span class="field__label">Giờ kết thúc *</span>
+                        <input type="time" id="new-end" class="field__input" required>
+                    </label>
+                </div>
+
+                <label class="field">
+                    <span class="field__label">Nội dung thuê</span>
+                    <textarea id="new-notes" class="field__textarea" placeholder="VD: Thuê phòng quay video, 8 người..."></textarea>
+                </label>
+
+                <label class="field field--inline">
+                    <span class="field__label">Số tiền (đ) *</span>
+                    <input type="number" id="new-price" class="field__input" min="0" placeholder="VD: 500000" required>
+                </label>
+
+                <div class="checkbox-row">
+                    <label class="checkbox">
+                        <input type="checkbox" id="new-has-vat">
+                        <span>Xuất hóa đơn VAT</span>
+                    </label>
+                    <label class="checkbox">
+                        <input type="checkbox" id="new-need-support">
+                        <span>Cần hỗ trợ thêm</span>
+                    </label>
+                </div>
+
+                <label class="checkbox checkbox--strong">
+                    <input type="checkbox" id="new-is-paid">
+                    <span>✅ Xác nhận đã thanh toán</span>
+                </label>
+
+                <div class="modal-actions">
+                    <button type="button" class="secondary-btn" id="booking-modal-cancel">Hủy</button>
+                    <button type="submit" class="primary-btn">Lưu booking</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <script src="script.js"></script>

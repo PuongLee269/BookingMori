@@ -75,6 +75,19 @@ const addCostBtn = document.getElementById("add-cost-btn");
 const costListEl = document.getElementById("cost-list");
 
 const addBookingBtn = document.getElementById("add-booking-btn");
+const bookingModalOverlay = document.getElementById("booking-modal-overlay");
+const bookingModalClose = document.getElementById("booking-modal-close");
+const bookingModalCancel = document.getElementById("booking-modal-cancel");
+const bookingForm = document.getElementById("booking-form");
+const modalSelectedDateEl = document.getElementById("modal-selected-date");
+const newNameEl = document.getElementById("new-name");
+const newStartEl = document.getElementById("new-start");
+const newEndEl = document.getElementById("new-end");
+const newNotesEl = document.getElementById("new-notes");
+const newPriceEl = document.getElementById("new-price");
+const newHasVATEl = document.getElementById("new-has-vat");
+const newNeedSupportEl = document.getElementById("new-need-support");
+const newIsPaidEl = document.getElementById("new-is-paid");
 
 // ====== STATE ======
 // Số ô hiển thị trên thanh ngày
@@ -188,6 +201,18 @@ function ensureSelectedDateVisible() {
         const first = getDateInfoFromOffset(stripOffset);
         selectedDateISO = first.iso;
     }
+}
+
+// ====== NEW BOOKING MODAL ======
+function openBookingModal() {
+    modalSelectedDateEl.textContent = selectedDateISO;
+    bookingForm.reset();
+    bookingModalOverlay.classList.add("is-open");
+    newNameEl.focus();
+}
+
+function closeBookingModal() {
+    bookingModalOverlay.classList.remove("is-open");
 }
 
 // ====== BOOKING LIST RENDER ======
@@ -399,7 +424,60 @@ function formatCurrency(value) {
     return (Number(value) || 0).toLocaleString("vi-VN") + " đ";
 }
 
-// demo: nút + hiện thông báo
-addBookingBtn.addEventListener("click", () => {
-    alert("Bản demo: Nút + sẽ được nối với Google Form / Trang tính ở bước sau.");
+// open/close modal
+addBookingBtn.addEventListener("click", openBookingModal);
+bookingModalClose.addEventListener("click", closeBookingModal);
+bookingModalCancel.addEventListener("click", closeBookingModal);
+bookingModalOverlay.addEventListener("click", (e) => {
+    if (e.target === bookingModalOverlay) closeBookingModal();
+});
+
+bookingForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+
+    const name = newNameEl.value.trim();
+    const start = newStartEl.value;
+    const end = newEndEl.value;
+    const price = Number(newPriceEl.value);
+
+    if (!name) {
+        alert("Vui lòng nhập tên khách/đơn vị.");
+        newNameEl.focus();
+        return;
+    }
+    if (!start || !end) {
+        alert("Vui lòng chọn đầy đủ khung giờ.");
+        if (!start) newStartEl.focus();
+        else newEndEl.focus();
+        return;
+    }
+    if (end <= start) {
+        alert("Giờ kết thúc phải sau giờ bắt đầu.");
+        newEndEl.focus();
+        return;
+    }
+    if (!price || price <= 0) {
+        alert("Nhập số tiền hợp lệ.");
+        newPriceEl.focus();
+        return;
+    }
+
+    const newBooking = {
+        id: Date.now(),
+        date: selectedDateISO,
+        name,
+        start,
+        end,
+        notes: newNotesEl.value.trim(),
+        price,
+        hasVAT: newHasVATEl.checked,
+        needSupport: newNeedSupportEl.checked,
+        isPaid: newIsPaidEl.checked
+    };
+
+    bookings.push(newBooking);
+    closeBookingModal();
+    renderBookingList();
+    updateFinancePanel();
+    updateChart();
 });
