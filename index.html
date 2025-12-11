@@ -200,72 +200,56 @@
                 </label>
 
                 <div class="field">
-                    <span class="field__label">Hình thức lặp lại</span>
-                    <div class="radio-row">
-                        <label class="radio">
-                            <input type="radio" name="recurrence" value="once" checked>
-                            <span>Chỉ đặt một ngày</span>
-                        </label>
-                        <label class="radio">
-                            <input type="radio" name="recurrence" value="weekly">
-                            <span>Lặp hàng tuần</span>
-                        </label>
-                        <label class="radio">
-                            <input type="radio" name="recurrence" value="monthly">
-                            <span>Lặp hàng tháng</span>
-                        </label>
+                    <span class="field__label">Lịch lặp</span>
+                    <label class="checkbox checkbox--strong">
+                        <input type="checkbox" id="new-repeat-toggle">
+                        <span>Bật lặp hàng tuần</span>
+                    </label>
+                    <div class="recurrence-controls">
+                        <span class="field__sub-label">Chọn các thứ muốn lặp</span>
+                        <div class="weekday-grid" id="new-repeat-weekdays">
+                            <label class="checkbox weekday-checkbox">
+                                <input type="checkbox" name="repeat-weekday" value="1">
+                                <span>Thứ 2</span>
+                            </label>
+                            <label class="checkbox weekday-checkbox">
+                                <input type="checkbox" name="repeat-weekday" value="2">
+                                <span>Thứ 3</span>
+                            </label>
+                            <label class="checkbox weekday-checkbox">
+                                <input type="checkbox" name="repeat-weekday" value="3">
+                                <span>Thứ 4</span>
+                            </label>
+                            <label class="checkbox weekday-checkbox">
+                                <input type="checkbox" name="repeat-weekday" value="4">
+                                <span>Thứ 5</span>
+                            </label>
+                            <label class="checkbox weekday-checkbox">
+                                <input type="checkbox" name="repeat-weekday" value="5">
+                                <span>Thứ 6</span>
+                            </label>
+                            <label class="checkbox weekday-checkbox">
+                                <input type="checkbox" name="repeat-weekday" value="6">
+                                <span>Thứ 7</span>
+                            </label>
+                            <label class="checkbox weekday-checkbox">
+                                <input type="checkbox" name="repeat-weekday" value="0">
+                                <span>Chủ nhật</span>
+                            </label>
+                        </div>
+
+                        <div class="field field--inline-group recurrence-fields">
+                            <label class="field field--inline">
+                                <span class="field__label">Lặp mỗi (tuần)</span>
+                                <input type="number" id="new-repeat-interval" class="field__input" min="1" value="1">
+                            </label>
+                            <label class="field field--inline">
+                                <span class="field__label">Trong bao nhiêu tuần</span>
+                                <input type="number" id="new-repeat-weeks" class="field__input" min="1" value="4">
+                            </label>
+                        </div>
                     </div>
-                    <div class="field--inline-group recurrence-controls">
-                        <label class="field field--inline">
-                            <span class="field__label">Chọn thứ (lặp tuần)</span>
-                            <select id="new-repeat-weekday" class="field__select">
-                                <option value="monday">Thứ 2</option>
-                                <option value="tuesday">Thứ 3</option>
-                                <option value="wednesday">Thứ 4</option>
-                                <option value="thursday">Thứ 5</option>
-                                <option value="friday">Thứ 6</option>
-                                <option value="saturday">Thứ 7</option>
-                                <option value="sunday">Chủ nhật</option>
-                            </select>
-                        </label>
-                        <label class="field field--inline">
-                            <span class="field__label">Ngày cố định (lặp tháng)</span>
-                            <select id="new-repeat-monthday" class="field__select">
-                                <option value="1">Ngày 1</option>
-                                <option value="2">Ngày 2</option>
-                                <option value="3">Ngày 3</option>
-                                <option value="4">Ngày 4</option>
-                                <option value="5">Ngày 5</option>
-                                <option value="6">Ngày 6</option>
-                                <option value="7">Ngày 7</option>
-                                <option value="8">Ngày 8</option>
-                                <option value="9">Ngày 9</option>
-                                <option value="10">Ngày 10</option>
-                                <option value="11">Ngày 11</option>
-                                <option value="12">Ngày 12</option>
-                                <option value="13">Ngày 13</option>
-                                <option value="14">Ngày 14</option>
-                                <option value="15">Ngày 15</option>
-                                <option value="16">Ngày 16</option>
-                                <option value="17">Ngày 17</option>
-                                <option value="18">Ngày 18</option>
-                                <option value="19">Ngày 19</option>
-                                <option value="20">Ngày 20</option>
-                                <option value="21">Ngày 21</option>
-                                <option value="22">Ngày 22</option>
-                                <option value="23">Ngày 23</option>
-                                <option value="24">Ngày 24</option>
-                                <option value="25">Ngày 25</option>
-                                <option value="26">Ngày 26</option>
-                                <option value="27">Ngày 27</option>
-                                <option value="28">Ngày 28</option>
-                                <option value="29">Ngày 29</option>
-                                <option value="30">Ngày 30</option>
-                                <option value="31">Ngày 31</option>
-                            </select>
-                        </label>
-                    </div>
-                    <p class="field__hint">Chọn lịch lặp nếu khách đặt định kỳ để dễ theo dõi và gửi nhắc nhở.</p>
+                    <p class="field__hint">Chỉ áp dụng lặp tuần khi bật tùy chọn và chọn ít nhất một thứ.</p>
                 </div>
 
                 <div class="checkbox-row">

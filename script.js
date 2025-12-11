@@ -88,10 +88,10 @@ const newPriceEl = document.getElementById("new-price");
 const newHasVATEl = document.getElementById("new-has-vat");
 const newNeedSupportEl = document.getElementById("new-need-support");
 const newIsPaidEl = document.getElementById("new-is-paid");
-const recurrenceInputs = bookingForm.querySelectorAll("input[name='recurrence']");
-const newRepeatWeekdayEl = document.getElementById("new-repeat-weekday");
-const newRepeatMonthdayEl = document.getElementById("new-repeat-monthday");
-const newRepeatCountEl = document.getElementById("new-repeat-count");
+const newRepeatToggleEl = document.getElementById("new-repeat-toggle");
+const newRepeatWeekdayEls = bookingForm.querySelectorAll("input[name='repeat-weekday']");
+const newRepeatIntervalEl = document.getElementById("new-repeat-interval");
+const newRepeatWeeksEl = document.getElementById("new-repeat-weeks");
 
 // ====== STATE ======
 // Số ô hiển thị trên thanh ngày
@@ -111,6 +111,12 @@ let currentBookingId = null;
 const WEEKDAYS = [
     "CN", "T2", "T3", "T4", "T5", "T6", "T7"
 ];
+
+// trạng thái lặp tuần
+let isWeeklyRepeatEnabled = false;
+let selectedRepeatWeekdays = [];
+let repeatWeekInterval = 1;
+let repeatWeeksCount = 4;
 
 // ====== INIT ======
 renderDateStrip();
@@ -211,12 +217,37 @@ function ensureSelectedDateVisible() {
 function openBookingModal() {
     modalSelectedDateEl.textContent = selectedDateISO;
     bookingForm.reset();
+    resetWeeklyRecurrenceControls();
     bookingModalOverlay.classList.add("is-open");
     newNameEl.focus();
 }
 
 function closeBookingModal() {
     bookingModalOverlay.classList.remove("is-open");
+}
+
+function resetWeeklyRecurrenceControls() {
+    isWeeklyRepeatEnabled = false;
+    selectedRepeatWeekdays = [];
+    repeatWeekInterval = 1;
+    repeatWeeksCount = 4;
+
+    if (newRepeatToggleEl) newRepeatToggleEl.checked = false;
+    newRepeatWeekdayEls?.forEach(cb => cb.checked = false);
+    if (newRepeatIntervalEl) newRepeatIntervalEl.value = String(repeatWeekInterval);
+    if (newRepeatWeeksEl) newRepeatWeeksEl.value = String(repeatWeeksCount);
+}
+
+function syncWeeklyStateFromForm() {
+    isWeeklyRepeatEnabled = Boolean(newRepeatToggleEl?.checked);
+    selectedRepeatWeekdays = Array.from(newRepeatWeekdayEls || [])
+        .filter(cb => cb.checked)
+        .map(cb => Number(cb.value));
+    repeatWeekInterval = Math.max(1, Number(newRepeatIntervalEl?.value) || 1);
+    repeatWeeksCount = Math.max(0, Number(newRepeatWeeksEl?.value) || 0);
+
+    if (newRepeatIntervalEl) newRepeatIntervalEl.value = String(repeatWeekInterval);
+    if (newRepeatWeeksEl) newRepeatWeeksEl.value = String(repeatWeeksCount || 0);
 }
 
 // ====== BOOKING LIST RENDER ======
@@ -436,6 +467,11 @@ bookingModalOverlay.addEventListener("click", (e) => {
     if (e.target === bookingModalOverlay) closeBookingModal();
 });
 
+newRepeatToggleEl?.addEventListener("change", syncWeeklyStateFromForm);
+newRepeatWeekdayEls?.forEach(cb => cb.addEventListener("change", syncWeeklyStateFromForm));
+newRepeatIntervalEl?.addEventListener("input", syncWeeklyStateFromForm);
+newRepeatWeeksEl?.addEventListener("input", syncWeeklyStateFromForm);
+
 bookingForm.addEventListener("submit", (e) => {
     e.preventDefault();
 
@@ -466,13 +502,19 @@ bookingForm.addEventListener("submit", (e) => {
         return;
     }
 
+    syncWeeklyStateFromForm();
     const recurrence = getSelectedRecurrence();
-    const repeatCount = Math.max(0, Number(newRepeatCountEl?.value) || 0);
-    const hasRepeatCountField = Boolean(newRepeatCountEl);
-    if (recurrence !== "once" && hasRepeatCountField && repeatCount === 0) {
-        alert("Nhập số tuần/tháng muốn lặp thêm.");
-        newRepeatCountEl?.focus();
-        return;
+    if (recurrence === "weekly") {
+        if (selectedRepeatWeekdays.length === 0) {
+            alert("Chọn ít nhất 1 thứ để lặp.");
+            newRepeatWeekdayEls?.[0]?.focus();
+            return;
+        }
+        if (repeatWeeksCount <= 0) {
+            alert("Nhập số tuần muốn lặp thêm.");
+            newRepeatWeeksEl?.focus();
+            return;
+        }
     }
     const baseBooking = {
         id: Date.now(),
@@ -487,8 +529,11 @@ bookingForm.addEventListener("submit", (e) => {
         isPaid: newIsPaidEl.checked
     };
 
-    const resolvedRepeatCount = recurrence === "once" ? 0 : (repeatCount || 4);
-    const bookingsToAdd = buildRecurringBookings(baseBooking, recurrence, resolvedRepeatCount);
+    const bookingsToAdd = buildRecurringBookings(baseBooking, recurrence, {
+        weekdays: selectedRepeatWeekdays,
+        weeksCount: repeatWeeksCount,
+        intervalWeeks: repeatWeekInterval
+    });
 
     const conflict = bookingsToAdd.find(b => hasTimeConflict(b, [...bookings, ...bookingsToAdd.filter(x => x !== b)]));
     if (conflict) {
@@ -504,23 +549,15 @@ bookingForm.addEventListener("submit", (e) => {
 });
 
 function getSelectedRecurrence() {
-    const selected = Array.from(recurrenceInputs).find(r => r.checked);
-    return selected?.value || "once";
+    return isWeeklyRepeatEnabled ? "weekly" : "once";
 }
 
-function buildRecurringBookings(baseBooking, recurrence, repeatCount) {
+function buildRecurringBookings(baseBooking, recurrence, options = {}) {
     const list = [baseBooking];
 
     if (recurrence === "weekly") {
-        const weekdayValue = newRepeatWeekdayEl?.value || "monday";
-        const weekday = mapWeekdayValueToNumber(weekdayValue);
-        const dates = generateWeeklyDates(baseBooking.date, weekday, repeatCount || 0);
-        dates.forEach((date, idx) => {
-            list.push({ ...baseBooking, id: baseBooking.id + idx + 1, date });
-        });
-    } else if (recurrence === "monthly") {
-        const monthDay = Math.max(1, Math.min(31, Number(newRepeatMonthdayEl?.value) || 1));
-        const dates = generateMonthlyDates(baseBooking.date, monthDay, repeatCount || 0);
+        const { weekdays = [], weeksCount = 0, intervalWeeks = 1 } = options;
+        const dates = generateWeeklyDates(baseBooking.date, weekdays, weeksCount, intervalWeeks);
         dates.forEach((date, idx) => {
             list.push({ ...baseBooking, id: baseBooking.id + idx + 1, date });
         });
@@ -529,45 +566,28 @@ function buildRecurringBookings(baseBooking, recurrence, repeatCount) {
     return list;
 }
 
-function mapWeekdayValueToNumber(value) {
-    const map = {
-        sunday: 0,
-        monday: 1,
-        tuesday: 2,
-        wednesday: 3,
-        thursday: 4,
-        friday: 5,
-        saturday: 6
-    };
-    return map[value] ?? 1;
-}
-
-function generateWeeklyDates(baseDateISO, targetWeekday, repeatCount) {
+function generateWeeklyDates(baseDateISO, targetWeekdays, weeksCount, intervalWeeks) {
     const dates = [];
     const baseDate = new Date(baseDateISO);
+    const interval = Math.max(1, intervalWeeks || 1);
+    const weekdayList = (targetWeekdays && targetWeekdays.length > 0)
+        ? Array.from(new Set(targetWeekdays))
+        : [baseDate.getDay()];
+    const sortedDays = weekdayList.sort((a, b) => a - b);
 
-    let cursor = new Date(baseDate);
-    for (let i = 0; i < repeatCount; i++) {
-        const diff = (targetWeekday - cursor.getDay() + 7) % 7 || 7;
-        cursor = new Date(cursor);
-        cursor.setDate(cursor.getDate() + diff);
-        dates.push(cursor.toISOString().slice(0, 10));
-    }
+    const baseWeekStart = new Date(baseDate);
+    baseWeekStart.setDate(baseWeekStart.getDate() - baseWeekStart.getDay());
 
-    return dates;
-}
+    for (let week = 0; week < weeksCount; week++) {
+        const weekStart = new Date(baseWeekStart);
+        weekStart.setDate(weekStart.getDate() + week * 7 * interval);
 
-function generateMonthlyDates(baseDateISO, targetDay, repeatCount) {
-    const dates = [];
-    const baseDate = new Date(baseDateISO);
-
-    for (let i = 1; i <= repeatCount; i++) {
-        const monthDate = new Date(baseDate);
-        monthDate.setDate(1);
-        monthDate.setMonth(monthDate.getMonth() + i);
-        const daysInMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
-        monthDate.setDate(Math.min(targetDay, daysInMonth));
-        dates.push(monthDate.toISOString().slice(0, 10));
+        sortedDays.forEach(day => {
+            const candidate = new Date(weekStart);
+            candidate.setDate(candidate.getDate() + day);
+            if (candidate <= baseDate) return;
+            dates.push(candidate.toISOString().slice(0, 10));
+        });
     }
 
     return dates;
