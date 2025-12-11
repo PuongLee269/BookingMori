@@ -173,100 +173,96 @@
             <p class="modal-card__date">Ngày đang chọn: <span id="modal-selected-date"></span></p>
 
             <form id="booking-form" class="modal-form">
-                <label class="field">
-                    <span class="field__label">Tên khách / tổ chức *</span>
-                    <input type="text" id="new-name" class="field__input" placeholder="Nhập tên" required>
-                </label>
-
-                <div class="field field--inline-group">
-                    <label class="field field--inline">
-                        <span class="field__label">Giờ bắt đầu *</span>
-                        <input type="time" id="new-start" class="field__input" required>
+                <section class="modal-section">
+                    <div class="section-title">Tiêu đề &amp; nội dung</div>
+                    <label class="field">
+                        <span class="field__label">Tên khách / tổ chức *</span>
+                        <input type="text" id="new-name" class="field__input" placeholder="Nhập tên" required>
                     </label>
-                    <label class="field field--inline">
-                        <span class="field__label">Giờ kết thúc *</span>
-                        <input type="time" id="new-end" class="field__input" required>
+
+                    <label class="field">
+                        <span class="field__label">Nội dung thuê</span>
+                        <textarea id="new-notes" class="field__textarea" placeholder="VD: Thuê phòng quay video, 8 người..."></textarea>
                     </label>
-                </div>
 
-                <label class="field">
-                    <span class="field__label">Nội dung thuê</span>
-                    <textarea id="new-notes" class="field__textarea" placeholder="VD: Thuê phòng quay video, 8 người..."></textarea>
-                </label>
+                    <label class="field field--inline">
+                        <span class="field__label">Số tiền (đ) *</span>
+                        <input type="number" id="new-price" class="field__input" min="0" placeholder="VD: 500000" required>
+                    </label>
+                </section>
 
-                <label class="field field--inline">
-                    <span class="field__label">Số tiền (đ) *</span>
-                    <input type="number" id="new-price" class="field__input" min="0" placeholder="VD: 500000" required>
-                </label>
-
-                <div class="field">
-                    <span class="field__label">Hình thức lặp lại</span>
-                    <div class="radio-row">
-                        <label class="radio">
-                            <input type="radio" name="recurrence" value="once" checked>
-                            <span>Chỉ đặt một ngày</span>
-                        </label>
-                        <label class="radio">
-                            <input type="radio" name="recurrence" value="weekly">
-                            <span>Lặp hàng tuần</span>
-                        </label>
-                        <label class="radio">
-                            <input type="radio" name="recurrence" value="monthly">
-                            <span>Lặp hàng tháng</span>
-                        </label>
-                    </div>
-                    <div class="field--inline-group recurrence-controls">
+                <section class="modal-section">
+                    <div class="section-title">Ngày bắt đầu &amp; giờ</div>
+                    <p class="section-hint">Chọn ngày đang xem và giờ áp dụng cho lịch này.</p>
+                    <div class="field field--inline-group">
                         <label class="field field--inline">
-                            <span class="field__label">Chọn thứ (lặp tuần)</span>
-                            <select id="new-repeat-weekday" class="field__select">
-                                <option value="monday">Thứ 2</option>
-                                <option value="tuesday">Thứ 3</option>
-                                <option value="wednesday">Thứ 4</option>
-                                <option value="thursday">Thứ 5</option>
-                                <option value="friday">Thứ 6</option>
-                                <option value="saturday">Thứ 7</option>
-                                <option value="sunday">Chủ nhật</option>
-                            </select>
+                            <span class="field__label">Giờ bắt đầu *</span>
+                            <input type="time" id="new-start" class="field__input" required>
                         </label>
                         <label class="field field--inline">
-                            <span class="field__label">Ngày cố định (lặp tháng)</span>
-                            <select id="new-repeat-monthday" class="field__select">
-                                <option value="1">Ngày 1</option>
-                                <option value="2">Ngày 2</option>
-                                <option value="3">Ngày 3</option>
-                                <option value="4">Ngày 4</option>
-                                <option value="5">Ngày 5</option>
-                                <option value="6">Ngày 6</option>
-                                <option value="7">Ngày 7</option>
-                                <option value="8">Ngày 8</option>
-                                <option value="9">Ngày 9</option>
-                                <option value="10">Ngày 10</option>
-                                <option value="11">Ngày 11</option>
-                                <option value="12">Ngày 12</option>
-                                <option value="13">Ngày 13</option>
-                                <option value="14">Ngày 14</option>
-                                <option value="15">Ngày 15</option>
-                                <option value="16">Ngày 16</option>
-                                <option value="17">Ngày 17</option>
-                                <option value="18">Ngày 18</option>
-                                <option value="19">Ngày 19</option>
-                                <option value="20">Ngày 20</option>
-                                <option value="21">Ngày 21</option>
-                                <option value="22">Ngày 22</option>
-                                <option value="23">Ngày 23</option>
-                                <option value="24">Ngày 24</option>
-                                <option value="25">Ngày 25</option>
-                                <option value="26">Ngày 26</option>
-                                <option value="27">Ngày 27</option>
-                                <option value="28">Ngày 28</option>
-                                <option value="29">Ngày 29</option>
-                                <option value="30">Ngày 30</option>
-                                <option value="31">Ngày 31</option>
-                            </select>
+                            <span class="field__label">Giờ kết thúc *</span>
+                            <input type="time" id="new-end" class="field__input" required>
                         </label>
                     </div>
-                    <p class="field__hint">Chọn lịch lặp nếu khách đặt định kỳ để dễ theo dõi và gửi nhắc nhở.</p>
-                </div>
+                </section>
+
+                <section class="modal-section">
+                    <div class="repeat-toggle">
+                        <div>
+                            <div class="section-title">Lặp lại</div>
+                            <p class="section-hint">Bật nếu đây là booking cố định hàng tuần (giống Google Tasks).</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="new-repeat-enabled">
+                            <span class="switch__slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="repeat-panel" id="repeat-panel">
+                        <div class="repeat-panel__row">
+                            <label class="field field--inline">
+                                <span class="field__label">Lặp lại mỗi</span>
+                                <div class="inline-input">
+                                    <input type="number" id="new-repeat-interval" class="field__input field__input--compact" min="1" value="1">
+                                    <span class="unit-text">tuần</span>
+                                </div>
+                            </label>
+                            <label class="field field--inline">
+                                <span class="field__label">Trong</span>
+                                <div class="inline-input">
+                                    <input type="number" id="new-repeat-count" class="field__input field__input--compact" min="1" max="12" value="4">
+                                    <span class="unit-text">tuần tới</span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="repeat-days">
+                            <span class="field__label">Chọn thứ trong tuần</span>
+                            <div class="day-chip-row" id="repeat-day-list">
+                                <button type="button" class="day-chip" data-weekday="1">T2</button>
+                                <button type="button" class="day-chip" data-weekday="2">T3</button>
+                                <button type="button" class="day-chip" data-weekday="3">T4</button>
+                                <button type="button" class="day-chip" data-weekday="4">T5</button>
+                                <button type="button" class="day-chip" data-weekday="5">T6</button>
+                                <button type="button" class="day-chip" data-weekday="6">T7</button>
+                                <button type="button" class="day-chip" data-weekday="0">CN</button>
+                            </div>
+                        </div>
+
+                        <div class="field field--inline-group repeat-time-row">
+                            <label class="field field--inline">
+                                <span class="field__label">Giờ bắt đầu lặp</span>
+                                <input type="time" id="new-repeat-start" class="field__input">
+                            </label>
+                            <label class="field field--inline">
+                                <span class="field__label">Giờ kết thúc lặp</span>
+                                <input type="time" id="new-repeat-end" class="field__input">
+                            </label>
+                        </div>
+
+                        <p class="field__hint">Tạo sẵn lịch cho các tuần sau, bỏ qua lặp tháng để đơn giản hơn.</p>
+                    </div>
+                </section>
 
                 <div class="checkbox-row">
                     <label class="checkbox">
@@ -285,8 +281,8 @@
                 </label>
 
                 <div class="modal-actions">
-                    <button type="button" class="secondary-btn" id="booking-modal-cancel">Hủy</button>
-                    <button type="submit" class="primary-btn">Lưu booking</button>
+                    <button type="button" class="secondary-btn" id="booking-modal-cancel">Huỷ</button>
+                    <button type="submit" class="primary-btn">Xong</button>
                 </div>
             </form>
         </div>
