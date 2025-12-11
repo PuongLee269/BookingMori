@@ -337,7 +337,8 @@ body.app-body {
 }
 
 .field__input,
-.field__textarea {
+.field__textarea,
+.field__select {
     border-radius: 14px;
     border: 1px solid rgba(0,0,0,0.06);
     padding: 10px 12px;
@@ -353,7 +354,8 @@ body.app-body {
 }
 
 .field__input:focus,
-.field__textarea:focus {
+.field__textarea:focus,
+.field__select:focus {
     border-color: var(--accent-dark);
 }
 
@@ -363,6 +365,31 @@ body.app-body {
     flex-wrap: wrap;
     gap: 8px 16px;
     margin: 4px 0 12px;
+}
+
+.radio-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin: 4px 0 6px;
+}
+
+.radio {
+    font-size: 13px;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.recurrence-controls {
+    margin-top: 2px;
+}
+
+.field__hint {
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: var(--text-muted);
 }
 
 .checkbox {
