@@ -28,133 +28,137 @@
         </button>
     </nav>
 
-    <main class="app-main">
+    <main class="app-main layout-grid">
 
-        <!-- ============= SCREEN 1: BOOKING OVERVIEW ============= -->
-        <section id="screen-booking" class="screen is-active">
-            <!-- thanh chọn ngày (thanh trượt) -->
-            <div class="date-strip">
-                <button class="date-strip__arrow" id="date-prev">&lt;</button>
-                <div class="date-strip__list" id="date-list">
-                    <!-- js render -->
+        <div class="primary-column">
+            <!-- ============= SCREEN 1: BOOKING OVERVIEW ============= -->
+            <section id="screen-booking" class="screen is-active">
+                <!-- thanh chọn ngày (thanh trượt) -->
+                <div class="date-strip">
+                    <button class="date-strip__arrow" id="date-prev">&lt;</button>
+                    <div class="date-strip__list" id="date-list">
+                        <!-- js render -->
+                    </div>
+                    <button class="date-strip__arrow" id="date-next">&gt;</button>
                 </div>
-                <button class="date-strip__arrow" id="date-next">&gt;</button>
-            </div>
 
-            <!-- danh sách khách book theo ngày -->
-            <section class="booking-list" id="booking-list">
-                <!-- js render -->
+                <!-- danh sách khách book theo ngày -->
+                <section class="booking-list" id="booking-list">
+                    <!-- js render -->
+                </section>
+
+                <!-- nút + (demo: chưa gắn Google Form) -->
+                <button class="fab" id="add-booking-btn">＋</button>
             </section>
 
-            <!-- nút + (demo: chưa gắn Google Form) -->
-            <button class="fab" id="add-booking-btn">＋</button>
-        </section>
+            <!-- ============= SCREEN 2: BOOKING DETAIL ============= -->
+            <section id="screen-booking-detail" class="screen">
+                <button class="back-btn" id="back-to-booking">&larr; Quay lại danh sách</button>
 
-        <!-- ============= SCREEN 2: BOOKING DETAIL ============= -->
-        <section id="screen-booking-detail" class="screen">
-            <button class="back-btn" id="back-to-booking">&larr; Quay lại danh sách</button>
+                <div class="card booking-detail-card">
+                    <div class="booking-detail__header">
+                        <h2 id="detail-name">Tên khách</h2>
+                        <p id="detail-time" class="badge-time">08:00 – 10:00</p>
+                    </div>
 
-            <div class="card booking-detail-card">
-                <div class="booking-detail__header">
-                    <h2 id="detail-name">Tên khách</h2>
-                    <p id="detail-time" class="badge-time">08:00 – 10:00</p>
-                </div>
-
-                <label class="field">
-                    <span class="field__label">Nội dung thuê</span>
-                    <textarea id="detail-notes" class="field__textarea"
-                              placeholder="VD: Workshop quay chụp sản phẩm, 10–12 người..."></textarea>
-                </label>
-
-                <label class="field">
-                    <span class="field__label">Số tiền thuê (đ)</span>
-                    <input id="detail-price" type="number" min="0" class="field__input"
-                           placeholder="VD: 400000">
-                </label>
-
-                <div class="checkbox-row">
-                    <label class="checkbox">
-                        <input type="checkbox" id="detail-has-vat">
-                        <span>Xuất hóa đơn VAT</span>
+                    <label class="field">
+                        <span class="field__label">Nội dung thuê</span>
+                        <textarea id="detail-notes" class="field__textarea"
+                                  placeholder="VD: Workshop quay chụp sản phẩm, 10–12 người..."></textarea>
                     </label>
-                    <label class="checkbox">
-                        <input type="checkbox" id="detail-need-support">
-                        <span>Cần hỗ trợ thêm</span>
+
+                    <label class="field">
+                        <span class="field__label">Số tiền thuê (đ)</span>
+                        <input id="detail-price" type="number" min="0" class="field__input"
+                               placeholder="VD: 400000">
                     </label>
+
+                    <div class="checkbox-row">
+                        <label class="checkbox">
+                            <input type="checkbox" id="detail-has-vat">
+                            <span>Xuất hóa đơn VAT</span>
+                        </label>
+                        <label class="checkbox">
+                            <input type="checkbox" id="detail-need-support">
+                            <span>Cần hỗ trợ thêm</span>
+                        </label>
+                    </div>
+
+                    <button class="primary-btn" id="mark-paid-btn">
+                        ✅ Xác nhận đã thanh toán
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <aside class="secondary-column">
+            <!-- ============= SCREEN 3: FINANCE TAB ============= -->
+            <section id="screen-finance" class="screen">
+                <div class="card finance-card">
+                    <h2>Tài chính hôm nay</h2>
+
+                    <div class="finance-row">
+                        <span>Doanh thu</span>
+                        <span id="revenue-amount" class="finance-row__value">0 đ</span>
+                    </div>
+
+                    <div class="finance-row">
+                        <span>Chi phí</span>
+                        <span id="cost-amount" class="finance-row__value">0 đ</span>
+                    </div>
+
+                    <div class="finance-row finance-row--highlight">
+                        <span>Lợi nhuận</span>
+                        <span id="profit-amount" class="finance-row__value">0 đ</span>
+                    </div>
                 </div>
 
-                <button class="primary-btn" id="mark-paid-btn">
-                    ✅ Xác nhận đã thanh toán
-                </button>
-            </div>
-        </section>
-
-        <!-- ============= SCREEN 3: FINANCE TAB ============= -->
-        <section id="screen-finance" class="screen">
-            <div class="card finance-card">
-                <h2>Tài chính hôm nay</h2>
-
-                <div class="finance-row">
-                    <span>Doanh thu</span>
-                    <span id="revenue-amount" class="finance-row__value">0 đ</span>
+                <div class="card chart-card">
+                    <h3>Biểu đồ doanh thu theo ngày</h3>
+                    <div id="chart-placeholder" class="chart-placeholder">
+                        <!-- js render bars -->
+                    </div>
+                    <p class="chart-note">Mỗi cột là doanh thu 1 ngày (chỉ tính các booking đã thanh toán).</p>
                 </div>
+            </section>
 
-                <div class="finance-row">
-                    <span>Chi phí</span>
-                    <span id="cost-amount" class="finance-row__value">0 đ</span>
-                </div>
+            <!-- ============= SCREEN 4: PRODUCTION / COST TAB ============= -->
+            <section id="screen-production" class="screen">
+                <div class="card">
+                    <h2>Thêm chi phí sản xuất</h2>
 
-                <div class="finance-row finance-row--highlight">
-                    <span>Lợi nhuận</span>
-                    <span id="profit-amount" class="finance-row__value">0 đ</span>
-                </div>
-            </div>
-
-            <div class="card chart-card">
-                <h3>Biểu đồ doanh thu theo ngày</h3>
-                <div id="chart-placeholder" class="chart-placeholder">
-                    <!-- js render bars -->
-                </div>
-                <p class="chart-note">Mỗi cột là doanh thu 1 ngày (chỉ tính các booking đã thanh toán).</p>
-            </div>
-        </section>
-
-        <!-- ============= SCREEN 4: PRODUCTION / COST TAB ============= -->
-        <section id="screen-production" class="screen">
-            <div class="card">
-                <h2>Thêm chi phí sản xuất</h2>
-
-                <label class="field">
-                    <span class="field__label">Nội dung</span>
-                    <input id="production-desc" type="text" class="field__input"
-                           placeholder="VD: In standee, thuê MC, mua nước uống...">
-                </label>
-
-                <label class="field field--inline">
-                    <span class="field__label">Số tiền (đ)</span>
-                    <input id="production-amount" type="number" min="0" class="field__input"
-                           placeholder="VD: 300000">
-                </label>
-
-                <div class="checkbox-row">
-                    <label class="checkbox">
-                        <input type="checkbox" id="production-is-fixed">
-                        <span>Ghi là chi phí cố định</span>
+                    <label class="field">
+                        <span class="field__label">Nội dung</span>
+                        <input id="production-desc" type="text" class="field__input"
+                               placeholder="VD: In standee, thuê MC, mua nước uống...">
                     </label>
+
+                    <label class="field field--inline">
+                        <span class="field__label">Số tiền (đ)</span>
+                        <input id="production-amount" type="number" min="0" class="field__input"
+                               placeholder="VD: 300000">
+                    </label>
+
+                    <div class="checkbox-row">
+                        <label class="checkbox">
+                            <input type="checkbox" id="production-is-fixed">
+                            <span>Ghi là chi phí cố định</span>
+                        </label>
+                    </div>
+
+                    <button class="primary-btn" id="add-cost-btn">
+                        ➕ Thêm vào danh sách chi phí
+                    </button>
                 </div>
 
-                <button class="primary-btn" id="add-cost-btn">
-                    ➕ Thêm vào danh sách chi phí
-                </button>
-            </div>
-
-            <div class="card">
-                <h3>Danh sách chi phí</h3>
-                <ul id="cost-list" class="cost-list">
-                    <!-- js render -->
-                </ul>
-            </div>
-        </section>
+                <div class="card">
+                    <h3>Danh sách chi phí</h3>
+                    <ul id="cost-list" class="cost-list">
+                        <!-- js render -->
+                    </ul>
+                </div>
+            </section>
+        </aside>
 
     </main>
 </div>
