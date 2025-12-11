@@ -511,6 +511,7 @@ bookingForm.addEventListener("submit", (e) => {
     const repeatInterval = Math.max(1, Number(newRepeatIntervalEl?.value) || 1);
     const repeatStart = newRepeatStartEl?.value || start;
     const repeatEnd = newRepeatEndEl?.value || end;
+    const selectedWeekdays = getSelectedWeekdays();
     if (repeatEnabled && repeatWeeks === 0) {
         alert("Nhập số tuần muốn tạo lịch lặp.");
         newRepeatCountEl?.focus();
@@ -526,6 +527,12 @@ bookingForm.addEventListener("submit", (e) => {
         newRepeatEndEl?.focus();
         return;
     }
+    if (repeatEnabled && selectedWeekdays.length === 0) {
+        alert("Chọn ít nhất một thứ trong tuần để lặp lịch.");
+        repeatDayListEl?.querySelector(".day-chip")?.focus?.();
+        return;
+    }
+
     const baseBooking = {
         id: Date.now(),
         date: selectedDateISO,
@@ -545,7 +552,7 @@ bookingForm.addEventListener("submit", (e) => {
         interval: repeatInterval,
         repeatStart,
         repeatEnd,
-        weekdays: getSelectedWeekdays()
+        weekdays: selectedWeekdays
     });
 
     const conflict = bookingsToAdd.find(b => hasTimeConflict(b, [...bookings, ...bookingsToAdd.filter(x => x !== b)]));
