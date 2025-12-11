@@ -213,7 +213,7 @@ body.app-body {
     padding-bottom: 60px; /* chừa chỗ cho FAB */
 }
 
-.booking-card {
+.booking-card { 
     background: var(--bg-card);
     border-radius: var(--radius-big);
     padding: 12px 14px;
@@ -230,9 +230,41 @@ body.app-body {
     align-items: center;
 }
 
+.booking-card__actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .booking-card__name {
     font-weight: 600;
     font-size: 15px;
+}
+
+.booking-card__delete {
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    background: rgba(255, 107, 107, 0.1);
+    color: var(--danger);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.booking-card__delete:hover,
+.booking-card__delete:focus-visible {
+    background: var(--danger);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(255, 107, 107, 0.35);
+}
+
+.booking-card__delete:focus-visible {
+    outline: none;
 }
 
 .booking-card__status {

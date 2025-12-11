@@ -279,8 +279,11 @@ function renderBookingList() {
         card.innerHTML = `
             <div class="booking-card__row">
                 <div class="booking-card__name">${b.name}</div>
-                <div class="booking-card__status ${b.isPaid ? "booking-card__paid" : "booking-card__unpaid"}">
-                    ${b.isPaid ? "✔" : "✖"}
+                <div class="booking-card__actions">
+                    <button class="booking-card__delete" aria-label="Xóa booking">×</button>
+                    <div class="booking-card__status ${b.isPaid ? "booking-card__paid" : "booking-card__unpaid"}">
+                        ${b.isPaid ? "✔" : "✖"}
+                    </div>
                 </div>
             </div>
             <div class="booking-card__row">
@@ -289,8 +292,23 @@ function renderBookingList() {
             </div>
         `;
         card.addEventListener("click", () => openBookingDetail(b.id));
+        const deleteBtn = card.querySelector(".booking-card__delete");
+        deleteBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            deleteBooking(b.id);
+        });
         bookingListEl.appendChild(card);
     });
+}
+
+function deleteBooking(id) {
+    const index = bookings.findIndex(b => b.id === id);
+    if (index === -1) return;
+
+    bookings.splice(index, 1);
+    renderBookingList();
+    updateFinancePanel();
+    updateChart();
 }
 
 // ====== BOOKING DETAIL ======
