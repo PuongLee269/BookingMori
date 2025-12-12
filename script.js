@@ -1,5 +1,5 @@
 // ====== DATA DEMO ======
-const bookings = [
+const DEFAULT_BOOKINGS = [
     {
         id: 1,
         date: todayOffsetISO(0),
@@ -38,8 +38,8 @@ const bookings = [
     }
 ];
 
-// danh sách chi phí
-const costs = [];
+let bookings = [];
+let costs = [];
 
 // ====== ELEMENTS ======
 const screenBooking = document.getElementById("screen-booking");
@@ -115,11 +115,22 @@ const WEEKDAYS = [
     "CN", "T2", "T3", "T4", "T5", "T6", "T7"
 ];
 
+const STORAGE_KEYS = {
+    bookings: "bm_bookings",
+    costs: "bm_costs"
+};
+
 // ====== INIT ======
-renderDateStrip();
-renderBookingList();
-updateFinancePanel();
-updateChart();
+initApp();
+
+function initApp() {
+    loadPersistedData();
+    renderDateStrip();
+    renderBookingList();
+    renderCostList();
+    updateFinancePanel();
+    updateChart();
+}
 
 // ====== TAB NAVIGATION ======
 tabButtons.forEach(btn => {
@@ -145,6 +156,11 @@ function showScreen(tab) {
     } else if (tab === "production") {
         screenProduction.classList.add("is-active");
     }
+}
+
+function loadPersistedData() {
+    bookings = readFromStorage(STORAGE_KEYS.bookings, DEFAULT_BOOKINGS);
+    costs = readFromStorage(STORAGE_KEYS.costs, []);
 }
 
 // ====== DATE STRIP (KHÔNG GIỚI HẠN) ======
@@ -309,6 +325,7 @@ function deleteBooking(id) {
     renderBookingList();
     updateFinancePanel();
     updateChart();
+    persistBookings();
 }
 
 // ====== BOOKING DETAIL ======
@@ -348,6 +365,7 @@ markPaidBtn.addEventListener("click", () => {
     renderBookingList();
     updateFinancePanel();
     updateChart();
+    persistBookings();
 
     alert("Đã xác nhận thanh toán cho khách này.");
 });
@@ -434,6 +452,7 @@ addCostBtn.addEventListener("click", () => {
     };
 
     costs.push(costItem);
+    persistCosts();
 
     productionDescEl.value = "";
     productionAmountEl.value = "";
@@ -477,9 +496,48 @@ function handleRemoveCost(id) {
     costs.splice(index, 1);
     renderCostList();
     updateFinancePanel();
+    persistCosts();
 }
 
 // ====== HELPER FUNCTIONS ======
+function readFromStorage(key, fallback) {
+    const fallbackCopy = cloneData(fallback);
+
+    if (typeof localStorage === "undefined") return fallbackCopy;
+
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallbackCopy;
+
+    try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : fallbackCopy;
+    } catch (err) {
+        console.warn(`Không đọc được dữ liệu ${key}:`, err);
+        return fallbackCopy;
+    }
+}
+
+function writeToStorage(key, value) {
+    if (typeof localStorage === "undefined") return;
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+    } catch (err) {
+        console.warn(`Không lưu được dữ liệu ${key}:`, err);
+    }
+}
+
+function persistBookings() {
+    writeToStorage(STORAGE_KEYS.bookings, bookings);
+}
+
+function persistCosts() {
+    writeToStorage(STORAGE_KEYS.costs, costs);
+}
+
+function cloneData(data) {
+    return JSON.parse(JSON.stringify(data));
+}
+
 function todayOffsetISO(offset) {
     const d = new Date();
     d.setDate(d.getDate() + offset);
@@ -601,6 +659,7 @@ bookingForm.addEventListener("submit", (e) => {
     }
 
     bookings.push(...bookingsToAdd);
+    persistBookings();
     closeBookingModal();
     renderBookingList();
     updateFinancePanel();
