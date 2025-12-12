@@ -752,7 +752,8 @@ body.app-body {
 
 .cost-item {
     display: flex;
-    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
     background: var(--bg-pill);
     border-radius: 999px;
     padding: 6px 10px;
@@ -768,6 +769,21 @@ body.app-body {
 
 .cost-item__value {
     font-weight: 600;
+    margin-left: auto;
+}
+
+.cost-item__delete {
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+}
+
+.cost-item__delete:hover,
+.cost-item__delete:focus {
+    color: var(--danger);
 }
 
 /* nhỏ hơn */
