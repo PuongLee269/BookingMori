@@ -450,12 +450,33 @@ function renderCostList() {
     costs.forEach(c => {
         const li = document.createElement("li");
         li.className = "cost-item";
+        li.dataset.id = c.id;
         li.innerHTML = `
             <span class="cost-item__label">${c.desc}</span>
             <span class="cost-item__value">${formatCurrency(c.amount)}</span>
         `;
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "cost-item__delete";
+        deleteBtn.textContent = "✕";
+        deleteBtn.dataset.id = c.id;
+        deleteBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            handleRemoveCost(c.id);
+        });
+
+        li.appendChild(deleteBtn);
         costListEl.appendChild(li);
     });
+}
+
+function handleRemoveCost(id) {
+    const index = costs.findIndex(c => c.id === id);
+    if (index === -1) return;
+
+    costs.splice(index, 1);
+    renderCostList();
+    updateFinancePanel();
 }
 
 // ====== HELPER FUNCTIONS ======
