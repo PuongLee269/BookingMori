@@ -501,7 +501,7 @@ body.app-body {
     inset: 0;
     background: rgba(17, 32, 12, 0.45);
     display: none;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     padding: 16px;
     z-index: 20;
@@ -514,11 +514,13 @@ body.app-body {
 .modal-card {
     width: 100%;
     max-width: 420px;
+    max-height: 90vh;
     background: var(--bg-card);
     border-radius: 20px;
     padding: 18px 18px 14px;
     box-shadow: 0 20px 40px rgba(0,0,0,0.2);
     animation: fadeIn 0.2s ease-out;
+    overflow-y: auto;
 }
 
 .modal-card__header {
