@@ -91,10 +91,14 @@ const newIsPaidEl = document.getElementById("new-is-paid");
 const newRepeatEnabledEl = document.getElementById("new-repeat-enabled");
 const newRepeatPanel = document.getElementById("repeat-panel");
 const newRepeatIntervalEl = document.getElementById("new-repeat-interval");
-const newRepeatCountEl = document.getElementById("new-repeat-count");
+const newRepeatUnitEl = document.getElementById("new-repeat-unit");
 const newRepeatStartEl = document.getElementById("new-repeat-start");
 const newRepeatEndEl = document.getElementById("new-repeat-end");
 const repeatDayListEl = document.getElementById("repeat-day-list");
+const repeatDaysWrapper = document.getElementById("repeat-days");
+const repeatEndRadios = document.querySelectorAll("input[name='repeat-end']");
+const repeatEndDateEl = document.getElementById("repeat-end-date");
+const repeatEndCountEl = document.getElementById("repeat-end-count");
 
 // ====== STATE ======
 // Số ô hiển thị trên thanh ngày
@@ -119,6 +123,9 @@ const STORAGE_KEYS = {
     bookings: "bm_bookings",
     costs: "bm_costs"
 };
+
+const REPEAT_MAX_OCCURRENCES = 24;
+const REPEAT_DEFAULT_COUNT = 6;
 
 // ====== INIT ======
 initApp();
@@ -230,8 +237,8 @@ function ensureSelectedDateVisible() {
 function openBookingModal() {
     modalSelectedDateEl.textContent = selectedDateISO;
     bookingForm.reset();
+    resetRepeatControls();
     toggleRepeatPanel(false);
-    syncRepeatDaySelection();
     bookingModalOverlay.classList.add("is-open");
     newNameEl.focus();
 }
@@ -240,7 +247,24 @@ function closeBookingModal() {
     bookingModalOverlay.classList.remove("is-open");
 }
 
+function resetRepeatControls() {
+    if (newRepeatIntervalEl) newRepeatIntervalEl.value = 1;
+    if (newRepeatUnitEl) newRepeatUnitEl.value = "week";
+    if (newRepeatStartEl) newRepeatStartEl.value = newStartEl.value;
+    if (newRepeatEndEl) newRepeatEndEl.value = newEndEl.value;
+    if (repeatEndCountEl) repeatEndCountEl.value = REPEAT_DEFAULT_COUNT;
+    if (repeatEndDateEl) repeatEndDateEl.value = "";
+    repeatEndRadios?.forEach(r => { r.checked = r.value === "none"; });
+    syncRepeatDaySelection();
+    updateRepeatUnitState();
+    updateRepeatEndInputs();
+}
+
 newRepeatEnabledEl?.addEventListener("change", () => toggleRepeatPanel());
+newRepeatUnitEl?.addEventListener("change", () => {
+    updateRepeatUnitState();
+});
+repeatEndRadios?.forEach(radio => radio.addEventListener("change", updateRepeatEndInputs));
 
 if (repeatDayListEl) {
     repeatDayListEl.querySelectorAll(".day-chip").forEach(chip => {
@@ -263,6 +287,8 @@ function toggleRepeatPanel(forceState) {
         if (getSelectedWeekdays().length === 0) {
             syncRepeatDaySelection();
         }
+        updateRepeatUnitState();
+        updateRepeatEndInputs();
     }
 }
 
@@ -273,6 +299,23 @@ function syncRepeatDaySelection() {
         const value = Number(btn.dataset.weekday);
         btn.classList.toggle("is-selected", value === targetWeekday);
     });
+}
+
+function updateRepeatUnitState() {
+    const unit = newRepeatUnitEl?.value || "week";
+    const isWeekly = unit === "week";
+    repeatDaysWrapper?.classList.toggle("is-hidden", !isWeekly);
+}
+
+function getSelectedRepeatEndType() {
+    const selected = Array.from(repeatEndRadios || []).find(r => r.checked);
+    return selected?.value || "none";
+}
+
+function updateRepeatEndInputs() {
+    const type = getSelectedRepeatEndType();
+    if (repeatEndDateEl) repeatEndDateEl.disabled = type !== "until";
+    if (repeatEndCountEl) repeatEndCountEl.disabled = type !== "count";
 }
 
 // ====== BOOKING LIST RENDER ======
@@ -604,16 +647,15 @@ bookingForm.addEventListener("submit", (e) => {
     }
 
     const repeatEnabled = Boolean(newRepeatEnabledEl?.checked);
-    const repeatWeeks = Math.max(0, Number(newRepeatCountEl?.value) || 0);
     const repeatInterval = Math.max(1, Number(newRepeatIntervalEl?.value) || 1);
+    const repeatUnit = newRepeatUnitEl?.value || "week";
     const repeatStart = newRepeatStartEl?.value || start;
     const repeatEnd = newRepeatEndEl?.value || end;
-    const selectedWeekdays = getSelectedWeekdays();
-    if (repeatEnabled && repeatWeeks === 0) {
-        alert("Nhập số tuần muốn tạo lịch lặp.");
-        newRepeatCountEl?.focus();
-        return;
-    }
+    const selectedWeekdays = repeatUnit === "week" ? getSelectedWeekdays() : [];
+    const repeatEndType = getSelectedRepeatEndType();
+    const repeatEndDate = repeatEndDateEl?.value;
+    const repeatCount = Math.max(0, Number(repeatEndCountEl?.value) || 0);
+
     if (repeatEnabled && (!repeatStart || !repeatEnd)) {
         alert("Nhập đầy đủ giờ bắt đầu/kết thúc cho chu kỳ lặp.");
         newRepeatStartEl?.focus();
@@ -624,9 +666,24 @@ bookingForm.addEventListener("submit", (e) => {
         newRepeatEndEl?.focus();
         return;
     }
-    if (repeatEnabled && selectedWeekdays.length === 0) {
+    if (repeatEnabled && repeatUnit === "week" && selectedWeekdays.length === 0) {
         alert("Chọn ít nhất một thứ trong tuần để lặp lịch.");
         repeatDayListEl?.querySelector(".day-chip")?.focus?.();
+        return;
+    }
+    if (repeatEnabled && repeatEndType === "until" && !repeatEndDate) {
+        alert("Chọn ngày kết thúc cho chu kỳ lặp.");
+        repeatEndDateEl?.focus();
+        return;
+    }
+    if (repeatEnabled && repeatEndType === "until" && repeatEndDate <= selectedDateISO) {
+        alert("Ngày kết thúc phải sau ngày bắt đầu.");
+        repeatEndDateEl?.focus();
+        return;
+    }
+    if (repeatEnabled && repeatEndType === "count" && repeatCount <= 0) {
+        alert("Nhập số lần lặp hợp lệ.");
+        repeatEndCountEl?.focus();
         return;
     }
 
@@ -645,11 +702,14 @@ bookingForm.addEventListener("submit", (e) => {
 
     const bookingsToAdd = buildRecurringBookings(baseBooking, {
         enabled: repeatEnabled,
-        weeksCount: repeatWeeks,
         interval: repeatInterval,
+        unit: repeatUnit,
         repeatStart,
         repeatEnd,
-        weekdays: selectedWeekdays
+        weekdays: selectedWeekdays,
+        endType: repeatEndType,
+        endDate: repeatEndDate,
+        occurrences: repeatEndType === "count" ? repeatCount : null
     });
 
     const conflict = bookingsToAdd.find(b => hasTimeConflict(b, [...bookings, ...bookingsToAdd.filter(x => x !== b)]));
@@ -674,14 +734,28 @@ function getSelectedWeekdays() {
 }
 
 function buildRecurringBookings(baseBooking, options = {}) {
-    const { enabled, weeksCount = 0, interval = 1, repeatStart, repeatEnd, weekdays = [] } = options;
+    const {
+        enabled,
+        interval = 1,
+        unit = "week",
+        repeatStart,
+        repeatEnd,
+        weekdays = [],
+        endType = "none",
+        endDate,
+        occurrences
+    } = options;
     const list = [baseBooking];
 
-    if (!enabled || weeksCount === 0) return list;
+    if (!enabled) return list;
 
     const baseDate = new Date(baseBooking.date);
-    const normalizedDays = weekdays.length > 0 ? weekdays : [baseDate.getDay()];
-    const dates = generateWeeklyDatesForDays(baseDate, normalizedDays, weeksCount, interval);
+    const normalizedDays = unit === "week" ? (weekdays.length > 0 ? weekdays : [baseDate.getDay()]) : [];
+    const limit = buildRepeatLimit(baseDate, { endType, endDate, occurrences });
+
+    const dates = unit === "day"
+        ? generateDailyDates(baseDate, interval, limit)
+        : generateWeeklyDatesForDays(baseDate, normalizedDays, interval, limit);
 
     dates.forEach((date, idx) => {
         list.push({
@@ -696,18 +770,70 @@ function buildRecurringBookings(baseBooking, options = {}) {
     return list;
 }
 
-function generateWeeklyDatesForDays(baseDate, weekdays, weeksCount, interval) {
+function buildRepeatLimit(baseDate, { endType = "none", endDate, occurrences }) {
+    const limit = {
+        maxCount: REPEAT_MAX_OCCURRENCES,
+        until: null
+    };
+
+    if (endType === "count" && typeof occurrences === "number") {
+        const total = Math.min(REPEAT_MAX_OCCURRENCES, Math.max(1, occurrences));
+        limit.maxCount = Math.max(0, total - 1);
+    }
+
+    if (endType === "until" && endDate) {
+        const until = new Date(endDate);
+        until.setHours(0, 0, 0, 0);
+        if (until > baseDate) {
+            limit.until = until;
+        }
+    }
+
+    return limit;
+}
+
+function generateWeeklyDatesForDays(baseDate, weekdays, interval, limit) {
     const dates = [];
     const baseWeekday = baseDate.getDay();
+    const sortedDays = [...weekdays].sort((a, b) => a - b);
+    let weekIndex = 0;
 
-    for (let i = 0; i < weeksCount; i++) {
-        const weekShift = (i + 1) * interval * 7;
-        weekdays.forEach(day => {
+    while (dates.length < limit.maxCount) {
+        const weekShift = (weekIndex + 1) * interval * 7;
+        sortedDays.forEach(day => {
+            if (dates.length >= limit.maxCount) return;
             const diff = (day - baseWeekday + 7) % 7;
             const target = new Date(baseDate);
             target.setDate(baseDate.getDate() + weekShift + diff);
+            if (limit.until && target > limit.until) return;
             dates.push(target.toISOString().slice(0, 10));
         });
+        weekIndex++;
+
+        if (limit.until) {
+            const nextBase = new Date(baseDate);
+            nextBase.setDate(baseDate.getDate() + (weekIndex + 1) * interval * 7);
+            if (nextBase > limit.until) break;
+        }
+
+        if (weekIndex > REPEAT_MAX_OCCURRENCES * interval) break; // safety guard
+    }
+
+    return dates;
+}
+
+function generateDailyDates(baseDate, interval, limit) {
+    const dates = [];
+    let step = 1;
+
+    while (dates.length < limit.maxCount) {
+        const target = new Date(baseDate);
+        target.setDate(baseDate.getDate() + step * interval);
+        if (limit.until && target > limit.until) break;
+        dates.push(target.toISOString().slice(0, 10));
+        step++;
+
+        if (!limit.until && step > REPEAT_MAX_OCCURRENCES * interval) break; // safety guard
     }
 
     return dates;
