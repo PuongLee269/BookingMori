@@ -219,24 +219,19 @@
                     </div>
 
                     <div class="repeat-panel" id="repeat-panel">
-                        <div class="repeat-panel__row">
-                            <label class="field field--inline">
-                                <span class="field__label">Lặp lại mỗi</span>
-                                <div class="inline-input">
-                                    <input type="number" id="new-repeat-interval" class="field__input field__input--compact" min="1" value="1">
-                                    <span class="unit-text">tuần</span>
-                                </div>
-                            </label>
-                            <label class="field field--inline">
-                                <span class="field__label">Trong</span>
-                                <div class="inline-input">
-                                    <input type="number" id="new-repeat-count" class="field__input field__input--compact" min="1" max="12" value="4">
-                                    <span class="unit-text">tuần tới</span>
-                                </div>
-                            </label>
+                        <div class="repeat-panel__row repeat-panel__row--stacked">
+                            <span class="field__label">Tần suất</span>
+                            <div class="inline-input repeat-frequency">
+                                <span>Lặp lại sau mỗi</span>
+                                <input type="number" id="new-repeat-interval" class="field__input field__input--compact" min="1" value="1">
+                                <select id="new-repeat-unit" class="field__select">
+                                    <option value="week">tuần</option>
+                                    <option value="day">ngày</option>
+                                </select>
+                            </div>
                         </div>
 
-                        <div class="repeat-days">
+                        <div class="repeat-days" id="repeat-days">
                             <span class="field__label">Chọn thứ trong tuần</span>
                             <div class="day-chip-row" id="repeat-day-list">
                                 <button type="button" class="day-chip" data-weekday="1">T2</button>
@@ -260,7 +255,28 @@
                             </label>
                         </div>
 
-                        <p class="field__hint">Tạo sẵn lịch cho các tuần sau, bỏ qua lặp tháng để đơn giản hơn.</p>
+                        <div class="repeat-end">
+                            <span class="field__label">Kết thúc</span>
+                            <div class="repeat-end__options">
+                                <label class="repeat-end__option">
+                                    <input type="radio" name="repeat-end" value="none" checked>
+                                    <span>Không ngày kết thúc</span>
+                                </label>
+                                <label class="repeat-end__option repeat-end__option--inline">
+                                    <input type="radio" name="repeat-end" value="until">
+                                    <span>Đến ngày</span>
+                                    <input type="date" id="repeat-end-date" class="field__input field__input--compact">
+                                </label>
+                                <label class="repeat-end__option repeat-end__option--inline">
+                                    <input type="radio" name="repeat-end" value="count">
+                                    <span>Sau</span>
+                                    <input type="number" id="repeat-end-count" class="field__input field__input--mini" min="1" value="6">
+                                    <span>lần</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <p class="field__hint">Tạo sẵn lịch lặp theo ngày/tuần, giới hạn số lần để tránh trùng lặp vô hạn.</p>
                     </div>
                 </section>
 
