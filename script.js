@@ -46,12 +46,15 @@ const screenBooking = document.getElementById("screen-booking");
 const screenBookingDetail = document.getElementById("screen-booking-detail");
 const screenFinance = document.getElementById("screen-finance");
 const screenProduction = document.getElementById("screen-production");
+const screenSettings = document.getElementById("screen-settings");
 
 const tabButtons = document.querySelectorAll(".icon-btn[data-tab]");
 
 const dateListEl = document.getElementById("date-list");
 const datePrevBtn = document.getElementById("date-prev");
 const dateNextBtn = document.getElementById("date-next");
+const dateTodayBtn = document.getElementById("date-today");
+const monthGridEl = document.getElementById("month-grid");
 const bookingListEl = document.getElementById("booking-list");
 
 const backToBookingBtn = document.getElementById("back-to-booking");
@@ -99,6 +102,7 @@ const repeatDaysWrapper = document.getElementById("repeat-days");
 const repeatEndRadios = document.querySelectorAll("input[name='repeat-end']");
 const repeatEndDateEl = document.getElementById("repeat-end-date");
 const repeatEndCountEl = document.getElementById("repeat-end-count");
+const clearDataBtn = document.getElementById("clear-data-btn");
 
 // ====== STATE ======
 // Số ô hiển thị trên thanh ngày
@@ -134,6 +138,7 @@ initApp();
 function initApp() {
     loadPersistedData();
     renderDateStrip();
+    renderMonthGrid();
     renderBookingList();
     renderCostList();
     updateFinancePanel();
@@ -154,8 +159,8 @@ tabButtons.forEach(btn => {
 });
 
 function showScreen(tab) {
-    [screenBooking, screenBookingDetail, screenFinance, screenProduction]
-        .forEach(s => s.classList.remove("is-active"));
+    [screenBooking, screenBookingDetail, screenFinance, screenProduction, screenSettings]
+        .forEach(s => s?.classList.remove("is-active"));
 
     if (tab === "booking") {
         screenBooking.classList.add("is-active");
@@ -163,6 +168,8 @@ function showScreen(tab) {
         screenFinance.classList.add("is-active");
     } else if (tab === "production") {
         screenProduction.classList.add("is-active");
+    } else if (tab === "settings") {
+        screenSettings?.classList.add("is-active");
     }
 }
 
@@ -178,6 +185,7 @@ datePrevBtn.addEventListener("click", () => {
     // nếu selectedDate đang ngoài 4 ô hiển thị thì auto chọn ô đầu
     ensureSelectedDateVisible();
     renderBookingList();
+    renderMonthGrid();
 });
 
 dateNextBtn.addEventListener("click", () => {
@@ -185,6 +193,15 @@ dateNextBtn.addEventListener("click", () => {
     renderDateStrip();
     ensureSelectedDateVisible();
     renderBookingList();
+    renderMonthGrid();
+});
+
+dateTodayBtn?.addEventListener("click", () => {
+    stripOffset = 0;
+    selectedDateISO = todayOffsetISO(0);
+    renderDateStrip();
+    renderBookingList();
+    renderMonthGrid();
 });
 
 function renderDateStrip() {
@@ -207,6 +224,7 @@ function renderDateStrip() {
             selectedDateISO = info.iso;
             renderDateStrip();
             renderBookingList();
+            renderMonthGrid();
         });
 
         dateListEl.appendChild(pill);
@@ -231,6 +249,67 @@ function ensureSelectedDateVisible() {
     if (!isVisible) {
         const first = getDateInfoFromOffset(stripOffset);
         selectedDateISO = first.iso;
+    }
+}
+
+// ====== MONTH GRID ======
+function renderMonthGrid() {
+    if (!monthGridEl) return;
+
+    monthGridEl.innerHTML = "";
+
+    const base = new Date(selectedDateISO);
+    const year = base.getFullYear();
+    const month = base.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const startWeekday = firstDay.getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const todayISO = todayOffsetISO(0);
+
+    const monthKey = `${year}-${String(month + 1).padStart(2, "0")}`;
+    const bookingCounts = bookings.reduce((acc, b) => {
+        if (b.date.startsWith(monthKey)) {
+            acc[b.date] = (acc[b.date] || 0) + 1;
+        }
+        return acc;
+    }, {});
+
+    for (let i = 0; i < startWeekday; i++) {
+        const placeholder = document.createElement("div");
+        placeholder.className = "month-cell is-muted";
+        monthGridEl.appendChild(placeholder);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+        const iso = `${monthKey}-${String(day).padStart(2, "0")}`;
+        const cell = document.createElement("div");
+        cell.className = "month-cell";
+
+        if (iso === todayISO) cell.classList.add("is-today");
+        if (iso === selectedDateISO) cell.classList.add("is-selected");
+
+        const count = bookingCounts[iso];
+        if (count) {
+            const badge = document.createElement("div");
+            badge.className = "month-cell__badge";
+            badge.textContent = count;
+            cell.appendChild(badge);
+        }
+
+        const label = document.createElement("div");
+        label.className = "month-cell__day";
+        label.textContent = day;
+        cell.appendChild(label);
+
+        cell.addEventListener("click", () => {
+            selectedDateISO = iso;
+            stripOffset = diffDaysFromToday(iso);
+            renderDateStrip();
+            renderBookingList();
+            renderMonthGrid();
+        });
+
+        monthGridEl.appendChild(cell);
     }
 }
 
@@ -430,6 +509,7 @@ function deleteBooking(id) {
 
     bookings.splice(index, 1);
     renderBookingList();
+    renderMonthGrid();
     updateFinancePanel();
     updateChart();
     persistBookings();
@@ -470,6 +550,7 @@ markPaidBtn.addEventListener("click", () => {
     booking.isPaid = true;
 
     renderBookingList();
+    renderMonthGrid();
     updateFinancePanel();
     updateChart();
     persistBookings();
@@ -569,6 +650,12 @@ addCostBtn.addEventListener("click", () => {
     updateFinancePanel();
 });
 
+clearDataBtn?.addEventListener("click", () => {
+    const confirmReset = confirm("Xóa toàn bộ dữ liệu demo và đặt lại? Bạn sẽ mất các chỉnh sửa.");
+    if (!confirmReset) return;
+    clearAllData();
+});
+
 function renderCostList() {
     costListEl.innerHTML = "";
     if (costs.length === 0) return;
@@ -633,12 +720,44 @@ function writeToStorage(key, value) {
     }
 }
 
+function removeFromStorage(key) {
+    if (typeof localStorage === "undefined") return;
+    try {
+        localStorage.removeItem(key);
+    } catch (err) {
+        console.warn(`Không xoá được dữ liệu ${key}:`, err);
+    }
+}
+
 function persistBookings() {
     writeToStorage(STORAGE_KEYS.bookings, bookings);
 }
 
 function persistCosts() {
     writeToStorage(STORAGE_KEYS.costs, costs);
+}
+
+function clearAllData() {
+    removeFromStorage(STORAGE_KEYS.bookings);
+    removeFromStorage(STORAGE_KEYS.costs);
+
+    bookings = cloneData(DEFAULT_BOOKINGS);
+    costs = [];
+
+    stripOffset = 0;
+    selectedDateISO = todayOffsetISO(0);
+
+    renderDateStrip();
+    renderMonthGrid();
+    renderBookingList();
+    renderCostList();
+    updateFinancePanel();
+    updateChart();
+
+    persistBookings();
+    persistCosts();
+
+    alert("Đã đặt lại dữ liệu demo và xoá thông tin lưu cục bộ.");
 }
 
 function cloneData(data) {
@@ -649,6 +768,14 @@ function todayOffsetISO(offset) {
     const d = new Date();
     d.setDate(d.getDate() + offset);
     return d.toISOString().slice(0, 10);
+}
+
+function diffDaysFromToday(targetISO) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(targetISO);
+    target.setHours(0, 0, 0, 0);
+    return Math.round((target - today) / (1000 * 60 * 60 * 24));
 }
 
 // tính thông tin 1 ngày dựa trên offset so với hôm nay
@@ -791,6 +918,7 @@ bookingForm.addEventListener("submit", (e) => {
     persistBookings();
     closeBookingModal();
     renderBookingList();
+    renderMonthGrid();
     updateFinancePanel();
     updateChart();
 });

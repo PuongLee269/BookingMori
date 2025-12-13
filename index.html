@@ -23,8 +23,8 @@
         <button class="icon-btn" data-tab="production" title="Sản xuất">
             <span>⚙</span>
         </button>
-        <button class="icon-btn" title="Tài khoản (demo)">
-            <span>🔒</span>
+        <button class="icon-btn" data-tab="settings" title="Cài đặt">
+            <span>🔧</span>
         </button>
     </nav>
 
@@ -36,11 +36,22 @@
                 <!-- thanh chọn ngày (thanh trượt) -->
                 <div class="date-strip">
                     <button class="date-strip__arrow" id="date-prev">&lt;</button>
+                    <button class="date-strip__today" id="date-today">Hôm nay</button>
                     <div class="date-strip__list" id="date-list">
                         <!-- js render -->
                     </div>
                     <button class="date-strip__arrow" id="date-next">&gt;</button>
                 </div>
+
+                <section class="month-section">
+                    <div class="month-section__header">
+                        <h3>Lịch tháng</h3>
+                        <p class="month-section__hint">Nhấn vào ngày để xem nhanh booking, các ngày có lịch sẽ được đánh dấu.</p>
+                    </div>
+                    <div class="month-grid" id="month-grid">
+                        <!-- js render -->
+                    </div>
+                </section>
 
                 <!-- danh sách khách book theo ngày -->
                 <section class="booking-list" id="booking-list">
@@ -156,6 +167,14 @@
                     <ul id="cost-list" class="cost-list">
                         <!-- js render -->
                     </ul>
+                </div>
+            </section>
+
+            <section id="screen-settings" class="screen">
+                <div class="card settings-card">
+                    <h2>Cài đặt &amp; dữ liệu</h2>
+                    <p>Thao tác này sẽ đưa dữ liệu booking và chi phí về mặc định ban đầu (demo) và xoá thông tin lưu trên trình duyệt.</p>
+                    <button class="danger-btn" id="clear-data-btn">⚠️ Xóa dữ liệu</button>
                 </div>
             </section>
         </aside>
