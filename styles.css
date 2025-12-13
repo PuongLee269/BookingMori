@@ -155,6 +155,23 @@ body.app-body {
     cursor: default;
 }
 
+.date-strip__today {
+    border: none;
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 8px 12px;
+    font-weight: 600;
+    color: var(--text-main);
+    cursor: pointer;
+    box-shadow: var(--shadow-soft);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.date-strip__today:active {
+    transform: translateY(1px);
+    box-shadow: none;
+}
+
 .date-strip__list {
     flex: 1;
     display: flex;
@@ -203,6 +220,83 @@ body.app-body {
 .date-pill.is-active {
     background: linear-gradient(135deg, var(--accent), var(--accent-strong));
     transform: translateY(-1px);
+}
+
+.month-section {
+    background: var(--bg-card);
+    border-radius: var(--radius-big);
+    padding: 12px 14px 14px;
+    box-shadow: var(--shadow-soft);
+}
+
+.month-section__header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.month-section__header h3 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.month-section__hint {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.month-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+}
+
+.month-cell {
+    background: #f2f8e2;
+    border-radius: 12px;
+    padding: 8px 6px;
+    text-align: center;
+    font-weight: 600;
+    color: var(--text-main);
+    min-height: 60px;
+    position: relative;
+    cursor: pointer;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+    box-shadow: 0 4px 10px rgba(87, 120, 62, 0.15);
+}
+
+.month-cell.is-muted {
+    background: #eef3dd;
+    color: var(--text-muted);
+    cursor: default;
+    box-shadow: none;
+}
+
+.month-cell.is-today {
+    border: 2px solid var(--accent);
+}
+
+.month-cell.is-selected {
+    background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+    color: #1f2a16;
+}
+
+.month-cell__badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: var(--accent-dark);
+    color: #fff;
+    border-radius: 999px;
+    padding: 2px 6px;
+    font-size: 11px;
+    box-shadow: 0 6px 12px rgba(87, 120, 62, 0.3);
+}
+
+.month-cell__day {
+    font-size: 15px;
 }
 
 /* BOOKING LIST */
@@ -500,6 +594,23 @@ body.app-body {
     font-weight: 600;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(87, 120, 62, 0.2);
+}
+
+.danger-btn {
+    border: 1px solid rgba(255, 107, 107, 0.4);
+    background: rgba(255, 107, 107, 0.1);
+    color: var(--danger);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 16px rgba(255, 107, 107, 0.25);
+}
+
+.settings-card p {
+    margin: 6px 0 12px;
+    color: var(--text-muted);
+    font-size: 14px;
 }
 
 /* MODAL */
