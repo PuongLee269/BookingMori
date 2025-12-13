@@ -38,8 +38,18 @@ const DEFAULT_BOOKINGS = [
     }
 ];
 
+const DEFAULT_PRICING = {
+    oddHourPrice: 200000,
+    recurringRules: {
+        range10to20: 180000,
+        range20to40: 150000,
+        rangeOver40: 120000
+    }
+};
+
 let bookings = [];
 let costs = [];
+let pricingConfig = cloneData(DEFAULT_PRICING);
 
 // ====== ELEMENTS ======
 const screenBooking = document.getElementById("screen-booking");
@@ -88,6 +98,8 @@ const newStartEl = document.getElementById("new-start");
 const newEndEl = document.getElementById("new-end");
 const newNotesEl = document.getElementById("new-notes");
 const newPriceEl = document.getElementById("new-price");
+const priceRuleSelect = document.getElementById("price-rule-select");
+const priceAutoInfoEl = document.getElementById("price-auto-info");
 const newHasVATEl = document.getElementById("new-has-vat");
 const newNeedSupportEl = document.getElementById("new-need-support");
 const newIsPaidEl = document.getElementById("new-is-paid");
@@ -103,6 +115,10 @@ const repeatEndRadios = document.querySelectorAll("input[name='repeat-end']");
 const repeatEndDateEl = document.getElementById("repeat-end-date");
 const repeatEndCountEl = document.getElementById("repeat-end-count");
 const clearDataBtn = document.getElementById("clear-data-btn");
+const settingOddPriceEl = document.getElementById("setting-odd-price");
+const settingRange10to20El = document.getElementById("setting-range-10-20");
+const settingRange20to40El = document.getElementById("setting-range-20-40");
+const settingRangeOver40El = document.getElementById("setting-range-over-40");
 
 // ====== STATE ======
 // Số ô hiển thị trên thanh ngày
@@ -125,7 +141,8 @@ const WEEKDAYS = [
 
 const STORAGE_KEYS = {
     bookings: "bm_bookings",
-    costs: "bm_costs"
+    costs: "bm_costs",
+    pricing: "bm_pricing"
 };
 
 const REPEAT_MAX_OCCURRENCES = 24;
@@ -141,6 +158,7 @@ function initApp() {
     renderMonthGrid();
     renderBookingList();
     renderCostList();
+    renderPricingSettings();
     updateFinancePanel();
     updateChart();
 }
@@ -176,6 +194,15 @@ function showScreen(tab) {
 function loadPersistedData() {
     bookings = readFromStorage(STORAGE_KEYS.bookings, DEFAULT_BOOKINGS);
     costs = readFromStorage(STORAGE_KEYS.costs, []);
+    const storedPricing = readFromStorage(STORAGE_KEYS.pricing, DEFAULT_PRICING) || {};
+    pricingConfig = {
+        oddHourPrice: storedPricing.oddHourPrice ?? DEFAULT_PRICING.oddHourPrice,
+        recurringRules: {
+            range10to20: storedPricing.recurringRules?.range10to20 ?? DEFAULT_PRICING.recurringRules.range10to20,
+            range20to40: storedPricing.recurringRules?.range20to40 ?? DEFAULT_PRICING.recurringRules.range20to40,
+            rangeOver40: storedPricing.recurringRules?.rangeOver40 ?? DEFAULT_PRICING.recurringRules.rangeOver40
+        }
+    };
 }
 
 // ====== DATE STRIP (KHÔNG GIỚI HẠN) ======
@@ -317,10 +344,12 @@ function renderMonthGrid() {
 function openBookingModal() {
     modalSelectedDateEl.textContent = selectedDateISO;
     bookingForm.reset();
+    if (priceRuleSelect) priceRuleSelect.value = "auto";
     resetRepeatControls();
     toggleRepeatPanel(false);
     bookingModalOverlay.classList.add("is-open");
     newNameEl.focus();
+    updatePriceSuggestion();
 }
 
 function closeBookingModal() {
@@ -343,18 +372,26 @@ function resetRepeatControls() {
 }
 
 newRepeatEnabledEl?.addEventListener("change", () => toggleRepeatPanel());
-newStartEl?.addEventListener("change", () => syncRepeatTimesFromMain());
-newEndEl?.addEventListener("change", () => syncRepeatTimesFromMain());
+newStartEl?.addEventListener("change", () => { syncRepeatTimesFromMain(); updatePriceSuggestion(); });
+newEndEl?.addEventListener("change", () => { syncRepeatTimesFromMain(); updatePriceSuggestion(); });
+newRepeatIntervalEl?.addEventListener("input", () => updatePriceSuggestion());
 newRepeatUnitEl?.addEventListener("change", () => {
     updateRepeatUnitState();
+    updatePriceSuggestion();
 });
 repeatEndRadios?.forEach(radio => radio.addEventListener("change", updateRepeatEndInputs));
 repeatEndCountEl?.addEventListener("input", () => handleRepeatCountInput());
+repeatEndDateEl?.addEventListener("change", () => updatePriceSuggestion());
+priceRuleSelect?.addEventListener("change", () => updatePriceSuggestion(true));
+
+[settingOddPriceEl, settingRange10to20El, settingRange20to40El, settingRangeOver40El]
+    .forEach(el => el?.addEventListener("input", handlePricingInputChange));
 
 if (repeatDayListEl) {
     repeatDayListEl.querySelectorAll(".day-chip").forEach(chip => {
         chip.addEventListener("click", () => {
             chip.classList.toggle("is-selected");
+            updatePriceSuggestion();
         });
     });
 }
@@ -374,6 +411,8 @@ function toggleRepeatPanel(forceState) {
         updateRepeatUnitState();
         updateRepeatEndInputs();
     }
+
+    updatePriceSuggestion();
 }
 
 function syncRepeatDaySelection() {
@@ -405,12 +444,14 @@ function updateRepeatEndInputs() {
     } else {
         handleRepeatCountInput();
     }
+    updatePriceSuggestion();
 }
 
 function handleRepeatCountInput() {
     const isCountType = getSelectedRepeatEndType() === "count";
     const { isInvalid } = normalizeRepeatCountInput();
     setRepeatCountErrorState(isCountType && isInvalid);
+    updatePriceSuggestion();
 }
 
 function normalizeRepeatCountInput() {
@@ -446,6 +487,168 @@ function setRepeatCountErrorState(hasError) {
     } else {
         repeatEndCountEl.removeAttribute("aria-invalid");
     }
+}
+
+function renderPricingSettings() {
+    if (settingOddPriceEl) settingOddPriceEl.value = pricingConfig.oddHourPrice || "";
+    if (settingRange10to20El) settingRange10to20El.value = pricingConfig.recurringRules?.range10to20 || "";
+    if (settingRange20to40El) settingRange20to40El.value = pricingConfig.recurringRules?.range20to40 || "";
+    if (settingRangeOver40El) settingRangeOver40El.value = pricingConfig.recurringRules?.rangeOver40 || "";
+}
+
+function handlePricingInputChange() {
+    pricingConfig = {
+        oddHourPrice: safePriceValue(settingOddPriceEl?.value, pricingConfig.oddHourPrice),
+        recurringRules: {
+            range10to20: safePriceValue(settingRange10to20El?.value, pricingConfig.recurringRules?.range10to20),
+            range20to40: safePriceValue(settingRange20to40El?.value, pricingConfig.recurringRules?.range20to40),
+            rangeOver40: safePriceValue(settingRangeOver40El?.value, pricingConfig.recurringRules?.rangeOver40)
+        }
+    };
+
+    persistPricing();
+    updatePriceSuggestion();
+}
+
+function safePriceValue(value, fallback = 0) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed) && parsed >= 0) return parsed;
+    return Math.max(0, fallback || 0);
+}
+
+function calculateDurationHours(start, end) {
+    const diffMinutes = timeToMinutes(end) - timeToMinutes(start);
+    return diffMinutes > 0 ? diffMinutes / 60 : 0;
+}
+
+function buildRepeatOptionsSnapshot(start, end) {
+    const repeatEnabled = Boolean(newRepeatEnabledEl?.checked);
+    const repeatInterval = Math.max(1, Number(newRepeatIntervalEl?.value) || 1);
+    const repeatUnit = newRepeatUnitEl?.value || "week";
+    const repeatStart = newRepeatStartEl?.value || start;
+    const repeatEnd = newRepeatEndEl?.value || end;
+    const repeatEndType = getSelectedRepeatEndType();
+    const repeatEndDate = repeatEndDateEl?.value;
+    const repeatCount = repeatEndType === "count" ? normalizeRepeatCountInput().value : null;
+    const weekdays = repeatUnit === "week" ? getSelectedWeekdays() : [];
+
+    return {
+        repeatEnabled,
+        repeatInterval,
+        repeatUnit,
+        repeatStart,
+        repeatEnd,
+        repeatEndType,
+        repeatEndDate,
+        repeatCount,
+        weekdays
+    };
+}
+
+function estimateOccurrencesForForm(start, end) {
+    const options = buildRepeatOptionsSnapshot(start, end);
+    const base = {
+        id: 0,
+        date: selectedDateISO,
+        name: "__preview__",
+        start,
+        end,
+        notes: "",
+        price: 0,
+        hasVAT: false,
+        needSupport: false,
+        isPaid: false
+    };
+
+    const preview = buildRecurringBookings(base, {
+        enabled: options.repeatEnabled,
+        interval: options.repeatInterval,
+        unit: options.repeatUnit,
+        repeatStart: options.repeatStart,
+        repeatEnd: options.repeatEnd,
+        weekdays: options.weekdays,
+        endType: options.repeatEndType,
+        endDate: options.repeatEndDate,
+        occurrences: options.repeatCount
+    });
+
+    return preview.length;
+}
+
+function resolveRateBySelection(selection, totalHours) {
+    switch (selection) {
+        case "odd":
+            return pricingConfig.oddHourPrice || 0;
+        case "range-10-20":
+            return pricingConfig.recurringRules?.range10to20 || 0;
+        case "range-20-40":
+            return pricingConfig.recurringRules?.range20to40 || 0;
+        case "range-over-40":
+            return pricingConfig.recurringRules?.rangeOver40 || 0;
+        case "auto":
+        default:
+            return getAutoRateForHours(totalHours);
+    }
+}
+
+function getAutoRateForHours(totalHours) {
+    if (totalHours > 40) return pricingConfig.recurringRules?.rangeOver40 || 0;
+    if (totalHours >= 20) return pricingConfig.recurringRules?.range20to40 || 0;
+    if (totalHours >= 10) return pricingConfig.recurringRules?.range10to20 || 0;
+    return pricingConfig.oddHourPrice || 0;
+}
+
+function getPricingLabel(selection, totalHours) {
+    if (selection === "auto") {
+        if (totalHours > 40) return "Tự tính: gói >40h";
+        if (totalHours >= 20) return "Tự tính: gói 20–40h";
+        if (totalHours >= 10) return "Tự tính: gói 10–20h";
+        return "Tự tính: giá giờ lẻ";
+    }
+    const map = {
+        odd: "Giá giờ lẻ",
+        "range-10-20": "Ưu đãi 10–20h",
+        "range-20-40": "Ưu đãi 20–40h",
+        "range-over-40": "Ưu đãi >40h",
+        manual: "Tự nhập"
+    };
+    return map[selection] || "Bảng giá";
+}
+
+function updatePriceSuggestion(force = false) {
+    if (!priceRuleSelect || !newStartEl || !newEndEl || !priceAutoInfoEl || !newPriceEl) return;
+
+    const selection = priceRuleSelect.value || "auto";
+    if (selection === "manual") {
+        priceAutoInfoEl.textContent = "Bạn đang tự nhập số tiền.";
+        return;
+    }
+
+    const start = newStartEl.value;
+    const end = newEndEl.value;
+
+    if (!start || !end) {
+        priceAutoInfoEl.textContent = "Nhập giờ để hệ thống tự tính.";
+        return;
+    }
+    if (end <= start) {
+        priceAutoInfoEl.textContent = "Giờ kết thúc phải sau giờ bắt đầu.";
+        return;
+    }
+
+    const durationHours = calculateDurationHours(start, end);
+    const occurrences = estimateOccurrencesForForm(start, end) || 1;
+    const totalHours = durationHours * occurrences;
+    const rate = resolveRateBySelection(selection, totalHours);
+    const computed = Math.round(durationHours * rate);
+    const label = getPricingLabel(selection, totalHours);
+
+    if (selection !== "manual") {
+        newPriceEl.value = computed || "";
+    }
+
+    const hoursText = `${durationHours.toFixed(1)}h x ${occurrences} buổi`;
+    priceAutoInfoEl.textContent = `${label}: ${formatCurrency(computed)} (${hoursText})`;
 }
 
 function syncRepeatTimesFromMain(force = false) {
@@ -704,7 +907,13 @@ function readFromStorage(key, fallback) {
 
     try {
         const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed : fallbackCopy;
+        if (Array.isArray(fallbackCopy)) {
+            return Array.isArray(parsed) ? parsed : fallbackCopy;
+        }
+        if (isPlainObject(fallbackCopy)) {
+            return isPlainObject(parsed) ? parsed : fallbackCopy;
+        }
+        return parsed ?? fallbackCopy;
     } catch (err) {
         console.warn(`Không đọc được dữ liệu ${key}:`, err);
         return fallbackCopy;
@@ -737,12 +946,18 @@ function persistCosts() {
     writeToStorage(STORAGE_KEYS.costs, costs);
 }
 
+function persistPricing() {
+    writeToStorage(STORAGE_KEYS.pricing, pricingConfig);
+}
+
 function clearAllData() {
     removeFromStorage(STORAGE_KEYS.bookings);
     removeFromStorage(STORAGE_KEYS.costs);
+    removeFromStorage(STORAGE_KEYS.pricing);
 
     bookings = cloneData(DEFAULT_BOOKINGS);
     costs = [];
+    pricingConfig = cloneData(DEFAULT_PRICING);
 
     stripOffset = 0;
     selectedDateISO = todayOffsetISO(0);
@@ -751,17 +966,23 @@ function clearAllData() {
     renderMonthGrid();
     renderBookingList();
     renderCostList();
+    renderPricingSettings();
     updateFinancePanel();
     updateChart();
 
     persistBookings();
     persistCosts();
+    persistPricing();
 
     alert("Đã đặt lại dữ liệu demo và xoá thông tin lưu cục bộ.");
 }
 
 function cloneData(data) {
     return JSON.parse(JSON.stringify(data));
+}
+
+function isPlainObject(value) {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function todayOffsetISO(offset) {
@@ -829,7 +1050,6 @@ bookingForm.addEventListener("submit", (e) => {
     const name = newNameEl.value.trim();
     const start = newStartEl.value;
     const end = newEndEl.value;
-    const price = Number(newPriceEl.value);
 
     if (!name) {
         alert("Vui lòng nhập tên khách/đơn vị.");
@@ -847,6 +1067,9 @@ bookingForm.addEventListener("submit", (e) => {
         newEndEl.focus();
         return;
     }
+
+    updatePriceSuggestion(true);
+    const price = Number(newPriceEl.value);
     if (!price || price <= 0) {
         alert("Nhập số tiền hợp lệ.");
         newPriceEl.focus();
