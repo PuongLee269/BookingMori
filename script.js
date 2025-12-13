@@ -126,6 +126,7 @@ const STORAGE_KEYS = {
 
 const REPEAT_MAX_OCCURRENCES = 24;
 const REPEAT_DEFAULT_COUNT = 6;
+let lastValidRepeatCount = REPEAT_DEFAULT_COUNT;
 
 // ====== INIT ======
 initApp();
@@ -253,11 +254,13 @@ function resetRepeatControls() {
     if (newRepeatStartEl) newRepeatStartEl.value = newStartEl.value;
     if (newRepeatEndEl) newRepeatEndEl.value = newEndEl.value;
     if (repeatEndCountEl) repeatEndCountEl.value = REPEAT_DEFAULT_COUNT;
+    lastValidRepeatCount = REPEAT_DEFAULT_COUNT;
     if (repeatEndDateEl) repeatEndDateEl.value = "";
     repeatEndRadios?.forEach(r => { r.checked = r.value === "none"; });
     syncRepeatDaySelection();
     updateRepeatUnitState();
     updateRepeatEndInputs();
+    setRepeatCountErrorState(false);
 }
 
 newRepeatEnabledEl?.addEventListener("change", () => toggleRepeatPanel());
@@ -267,6 +270,7 @@ newRepeatUnitEl?.addEventListener("change", () => {
     updateRepeatUnitState();
 });
 repeatEndRadios?.forEach(radio => radio.addEventListener("change", updateRepeatEndInputs));
+repeatEndCountEl?.addEventListener("input", () => handleRepeatCountInput());
 
 if (repeatDayListEl) {
     repeatDayListEl.querySelectorAll(".day-chip").forEach(chip => {
@@ -317,6 +321,52 @@ function updateRepeatEndInputs() {
     const type = getSelectedRepeatEndType();
     if (repeatEndDateEl) repeatEndDateEl.disabled = type !== "until";
     if (repeatEndCountEl) repeatEndCountEl.disabled = type !== "count";
+    if (type !== "count") {
+        setRepeatCountErrorState(false);
+    } else {
+        handleRepeatCountInput();
+    }
+}
+
+function handleRepeatCountInput() {
+    const isCountType = getSelectedRepeatEndType() === "count";
+    const { isInvalid } = normalizeRepeatCountInput();
+    setRepeatCountErrorState(isCountType && isInvalid);
+}
+
+function normalizeRepeatCountInput() {
+    if (!repeatEndCountEl) return { value: lastValidRepeatCount, isInvalid: false };
+
+    const rawValue = repeatEndCountEl.value?.trim();
+    if (!rawValue) {
+        return { value: lastValidRepeatCount, isInvalid: true };
+    }
+    const parsed = Number(rawValue);
+    const isWholeNumber = Number.isInteger(parsed);
+
+    if (isWholeNumber && parsed >= 1) {
+        lastValidRepeatCount = parsed;
+        repeatEndCountEl.value = String(parsed);
+        return { value: parsed, isInvalid: false };
+    }
+
+    if (isWholeNumber && parsed < 1) {
+        lastValidRepeatCount = 1;
+        repeatEndCountEl.value = "1";
+        return { value: 1, isInvalid: false };
+    }
+
+    return { value: lastValidRepeatCount, isInvalid: true };
+}
+
+function setRepeatCountErrorState(hasError) {
+    if (!repeatEndCountEl) return;
+    repeatEndCountEl.classList.toggle("is-invalid", hasError);
+    if (hasError) {
+        repeatEndCountEl.setAttribute("aria-invalid", "true");
+    } else {
+        repeatEndCountEl.removeAttribute("aria-invalid");
+    }
 }
 
 function syncRepeatTimesFromMain(force = false) {
@@ -672,7 +722,9 @@ bookingForm.addEventListener("submit", (e) => {
     const selectedWeekdays = repeatUnit === "week" ? getSelectedWeekdays() : [];
     const repeatEndType = getSelectedRepeatEndType();
     const repeatEndDate = repeatEndDateEl?.value;
-    const repeatCount = Math.max(0, Number(repeatEndCountEl?.value) || 0);
+    const repeatCountState = normalizeRepeatCountInput();
+    const repeatCount = repeatCountState.value;
+    setRepeatCountErrorState(repeatEndType === "count" && repeatCountState.isInvalid);
 
     if (repeatEnabled && !repeatTimesAligned && (!repeatStart || !repeatEnd)) {
         alert("Nhập đầy đủ giờ bắt đầu/kết thúc cho chu kỳ lặp.");
@@ -699,8 +751,7 @@ bookingForm.addEventListener("submit", (e) => {
         repeatEndDateEl?.focus();
         return;
     }
-    if (repeatEnabled && repeatEndType === "count" && repeatCount <= 0) {
-        alert("Nhập số lần lặp hợp lệ.");
+    if (repeatEnabled && repeatEndType === "count" && repeatCountState.isInvalid) {
         repeatEndCountEl?.focus();
         return;
     }
