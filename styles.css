@@ -391,6 +391,13 @@ body.app-body {
     border-color: var(--accent-dark);
 }
 
+.field__input.is-invalid,
+.field__textarea.is-invalid,
+.field__select.is-invalid {
+    border-color: #f97316;
+    background: #fff7ed;
+}
+
 /* checkbox */
 .checkbox-row {
     display: flex;
