@@ -176,6 +176,38 @@
                     <p>Thao tác này sẽ đưa dữ liệu booking và chi phí về mặc định ban đầu (demo) và xoá thông tin lưu trên trình duyệt.</p>
                     <button class="danger-btn" id="clear-data-btn">⚠️ Xóa dữ liệu</button>
                 </div>
+
+                <div class="card settings-card">
+                    <h3>Bảng giá giờ lẻ</h3>
+                    <p class="field__hint">Áp dụng cho các booking dưới 10 giờ hoặc khi chọn thủ công.</p>
+                    <label class="field field--inline">
+                        <span class="field__label">Giá giờ lẻ (đ/giờ)</span>
+                        <input type="number" id="setting-odd-price" class="field__input" min="0" placeholder="VD: 200000">
+                    </label>
+                </div>
+
+                <div class="card settings-card">
+                    <h3>Giá ưu đãi cho booking lặp</h3>
+                    <p class="field__hint">Dùng khi tổng thời lượng (số giờ x số buổi lặp) nằm trong các ngưỡng dưới đây.</p>
+                    <div class="pricing-table">
+                        <div class="pricing-row">
+                            <span class="pricing-label">10 – 20 giờ</span>
+                            <input type="number" id="setting-range-10-20" class="field__input field__input--compact" min="0" placeholder="180000">
+                            <span class="pricing-note">đ/giờ</span>
+                        </div>
+                        <div class="pricing-row">
+                            <span class="pricing-label">20 – 40 giờ</span>
+                            <input type="number" id="setting-range-20-40" class="field__input field__input--compact" min="0" placeholder="150000">
+                            <span class="pricing-note">đ/giờ</span>
+                        </div>
+                        <div class="pricing-row">
+                            <span class="pricing-label">&gt; 40 giờ</span>
+                            <input type="number" id="setting-range-over-40" class="field__input field__input--compact" min="0" placeholder="120000">
+                            <span class="pricing-note">đ/giờ</span>
+                        </div>
+                    </div>
+                    <p class="field__hint">Giá được lưu tự động và áp dụng cho từng booking khi chọn chế độ tự tính.</p>
+                </div>
             </section>
         </aside>
 
@@ -207,6 +239,18 @@
                     <label class="field field--inline">
                         <span class="field__label">Số tiền (đ) *</span>
                         <input type="number" id="new-price" class="field__input" min="0" placeholder="VD: 500000" required>
+                    </label>
+                    <label class="field">
+                        <span class="field__label">Quy tắc tính giá</span>
+                        <select id="price-rule-select" class="field__select">
+                            <option value="auto">Tự động (tổng giờ / ưu đãi lặp)</option>
+                            <option value="odd">Giá giờ lẻ</option>
+                            <option value="range-10-20">Ưu đãi 10 – 20 giờ</option>
+                            <option value="range-20-40">Ưu đãi 20 – 40 giờ</option>
+                            <option value="range-over-40">Ưu đãi &gt; 40 giờ</option>
+                            <option value="manual">Tự nhập thủ công</option>
+                        </select>
+                        <p class="field__hint" id="price-auto-info">Hệ thống sẽ tự tính dựa trên giờ và bảng giá.</p>
                     </label>
                 </section>
 

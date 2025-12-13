@@ -613,6 +613,28 @@ body.app-body {
     font-size: 14px;
 }
 
+.pricing-table {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.pricing-row {
+    display: grid;
+    grid-template-columns: 1fr 140px auto;
+    gap: 10px;
+    align-items: center;
+}
+
+.pricing-label {
+    font-weight: 600;
+}
+
+.pricing-note {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
 /* MODAL */
 .modal-overlay {
     position: fixed;
