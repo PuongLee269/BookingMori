@@ -258,7 +258,7 @@ function renderMonthGrid() {
 
     monthGridEl.innerHTML = "";
 
-    const base = new Date(selectedDateISO);
+    const base = parseLocalDateFromISO(selectedDateISO);
     const year = base.getFullYear();
     const month = base.getMonth();
     const firstDay = new Date(year, month, 1);
@@ -378,7 +378,7 @@ function toggleRepeatPanel(forceState) {
 
 function syncRepeatDaySelection() {
     if (!repeatDayListEl) return;
-    const targetWeekday = new Date(selectedDateISO).getDay();
+    const targetWeekday = parseLocalDateFromISO(selectedDateISO).getDay();
     repeatDayListEl.querySelectorAll(".day-chip").forEach(btn => {
         const value = Number(btn.dataset.weekday);
         btn.classList.toggle("is-selected", value === targetWeekday);
@@ -766,15 +766,15 @@ function cloneData(data) {
 
 function todayOffsetISO(offset) {
     const d = new Date();
+    d.setHours(0, 0, 0, 0);
     d.setDate(d.getDate() + offset);
-    return d.toISOString().slice(0, 10);
+    return formatLocalISODate(d);
 }
 
 function diffDaysFromToday(targetISO) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const target = new Date(targetISO);
-    target.setHours(0, 0, 0, 0);
+    const target = parseLocalDateFromISO(targetISO);
     return Math.round((target - today) / (1000 * 60 * 60 * 24));
 }
 
@@ -784,7 +784,7 @@ function getDateInfoFromOffset(offset) {
     base.setHours(0,0,0,0);
     base.setDate(base.getDate() + offset);
 
-    const iso = base.toISOString().slice(0,10);
+    const iso = formatLocalISODate(base);
     const todayISO = todayOffsetISO(0);
 
     return {
@@ -793,6 +793,22 @@ function getDateInfoFromOffset(offset) {
         weekdayShort: WEEKDAYS[base.getDay()],
         isToday: iso === todayISO
     };
+}
+
+function formatLocalISODate(date) {
+    const d = new Date(date.getTime());
+    d.setHours(0, 0, 0, 0);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
+
+function parseLocalDateFromISO(iso) {
+    const [year, month, day] = iso.split("-").map(Number);
+    const date = new Date(year, (month || 1) - 1, day || 1);
+    date.setHours(0, 0, 0, 0);
+    return date;
 }
 
 function formatCurrency(value) {
@@ -946,7 +962,7 @@ function buildRecurringBookings(baseBooking, options = {}) {
 
     if (!enabled) return list;
 
-    const baseDate = new Date(baseBooking.date);
+    const baseDate = parseLocalDateFromISO(baseBooking.date);
     const normalizedDays = unit === "week" ? (weekdays.length > 0 ? weekdays : [baseDate.getDay()]) : [];
     const limit = buildRepeatLimit(baseDate, { endType, endDate, occurrences });
 
@@ -979,8 +995,7 @@ function buildRepeatLimit(baseDate, { endType = "none", endDate, occurrences }) 
     }
 
     if (endType === "until" && endDate) {
-        const until = new Date(endDate);
-        until.setHours(0, 0, 0, 0);
+        const until = parseLocalDateFromISO(endDate);
         if (until > baseDate) {
             limit.until = until;
         }
@@ -1003,7 +1018,7 @@ function generateWeeklyDatesForDays(baseDate, weekdays, interval, limit) {
             const target = new Date(baseDate);
             target.setDate(baseDate.getDate() + weekShift + diff);
             if (limit.until && target > limit.until) return;
-            dates.push(target.toISOString().slice(0, 10));
+            dates.push(formatLocalISODate(target));
         });
         weekIndex++;
 
@@ -1027,7 +1042,7 @@ function generateDailyDates(baseDate, interval, limit) {
         const target = new Date(baseDate);
         target.setDate(baseDate.getDate() + step * interval);
         if (limit.until && target > limit.until) break;
-        dates.push(target.toISOString().slice(0, 10));
+        dates.push(formatLocalISODate(target));
         step++;
 
         if (!limit.until && step > REPEAT_MAX_OCCURRENCES * interval) break; // safety guard
