@@ -261,6 +261,8 @@ function resetRepeatControls() {
 }
 
 newRepeatEnabledEl?.addEventListener("change", () => toggleRepeatPanel());
+newStartEl?.addEventListener("change", () => syncRepeatTimesFromMain());
+newEndEl?.addEventListener("change", () => syncRepeatTimesFromMain());
 newRepeatUnitEl?.addEventListener("change", () => {
     updateRepeatUnitState();
 });
@@ -282,8 +284,7 @@ function toggleRepeatPanel(forceState) {
     newRepeatPanel.classList.toggle("is-active", isActive);
 
     if (isActive) {
-        if (!newRepeatStartEl.value) newRepeatStartEl.value = newStartEl.value;
-        if (!newRepeatEndEl.value) newRepeatEndEl.value = newEndEl.value;
+        syncRepeatTimesFromMain(true);
         if (getSelectedWeekdays().length === 0) {
             syncRepeatDaySelection();
         }
@@ -316,6 +317,19 @@ function updateRepeatEndInputs() {
     const type = getSelectedRepeatEndType();
     if (repeatEndDateEl) repeatEndDateEl.disabled = type !== "until";
     if (repeatEndCountEl) repeatEndCountEl.disabled = type !== "count";
+}
+
+function syncRepeatTimesFromMain(force = false) {
+    if (!newRepeatStartEl || !newRepeatEndEl) return;
+    const startVal = newStartEl?.value || "";
+    const endVal = newEndEl?.value || "";
+    const repeatActive = Boolean(newRepeatEnabledEl?.checked);
+
+    const shouldSyncStart = force || repeatActive || !newRepeatStartEl.value;
+    const shouldSyncEnd = force || repeatActive || !newRepeatEndEl.value;
+
+    if (shouldSyncStart) newRepeatStartEl.value = startVal;
+    if (shouldSyncEnd) newRepeatEndEl.value = endVal;
 }
 
 // ====== BOOKING LIST RENDER ======
@@ -649,19 +663,23 @@ bookingForm.addEventListener("submit", (e) => {
     const repeatEnabled = Boolean(newRepeatEnabledEl?.checked);
     const repeatInterval = Math.max(1, Number(newRepeatIntervalEl?.value) || 1);
     const repeatUnit = newRepeatUnitEl?.value || "week";
-    const repeatStart = newRepeatStartEl?.value || start;
-    const repeatEnd = newRepeatEndEl?.value || end;
+    const repeatStartValue = newRepeatStartEl?.value;
+    const repeatEndValue = newRepeatEndEl?.value;
+    const repeatTimesAligned = (!repeatStartValue && !repeatEndValue)
+        || (repeatStartValue === start && repeatEndValue === end);
+    const repeatStart = repeatStartValue || start;
+    const repeatEnd = repeatEndValue || end;
     const selectedWeekdays = repeatUnit === "week" ? getSelectedWeekdays() : [];
     const repeatEndType = getSelectedRepeatEndType();
     const repeatEndDate = repeatEndDateEl?.value;
     const repeatCount = Math.max(0, Number(repeatEndCountEl?.value) || 0);
 
-    if (repeatEnabled && (!repeatStart || !repeatEnd)) {
+    if (repeatEnabled && !repeatTimesAligned && (!repeatStart || !repeatEnd)) {
         alert("Nhập đầy đủ giờ bắt đầu/kết thúc cho chu kỳ lặp.");
         newRepeatStartEl?.focus();
         return;
     }
-    if (repeatEnabled && repeatEnd <= repeatStart) {
+    if (repeatEnabled && !repeatTimesAligned && repeatEnd <= repeatStart) {
         alert("Giờ kết thúc lặp phải sau giờ bắt đầu lặp.");
         newRepeatEndEl?.focus();
         return;
