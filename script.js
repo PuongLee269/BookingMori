@@ -80,6 +80,11 @@ const revenueAmountEl = document.getElementById("revenue-amount");
 const costAmountEl = document.getElementById("cost-amount");
 const profitAmountEl = document.getElementById("profit-amount");
 const chartPlaceholderEl = document.getElementById("chart-placeholder");
+const financeFilterButtons = document.querySelectorAll("[data-finance-filter]");
+const financeTitleEl = document.getElementById("finance-title");
+const revenueLabelEl = document.getElementById("revenue-label");
+const chartTitleEl = document.getElementById("chart-title");
+const chartNoteEl = document.getElementById("chart-note");
 
 const productionDescEl = document.getElementById("production-desc");
 const productionAmountEl = document.getElementById("production-amount");
@@ -134,6 +139,8 @@ let selectedDateISO = todayOffsetISO(0);
 // id booking đang xem chi tiết
 let currentBookingId = null;
 
+let financeFilterMode = "total";
+
 // bảng thứ
 const WEEKDAYS = [
     "CN", "T2", "T3", "T4", "T5", "T6", "T7"
@@ -159,6 +166,7 @@ function initApp() {
     renderBookingList();
     renderCostList();
     renderPricingSettings();
+    updateFinanceFilterUI();
     updateFinancePanel();
     updateChart();
 }
@@ -173,6 +181,17 @@ tabButtons.forEach(btn => {
         btn.classList.add("is-active");
 
         showScreen(tab);
+    });
+});
+
+financeFilterButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+        const mode = btn.dataset.financeFilter;
+        if (!mode || financeFilterMode === mode) return;
+        financeFilterMode = mode;
+        updateFinanceFilterUI();
+        updateFinancePanel();
+        updateChart();
     });
 });
 
@@ -762,12 +781,103 @@ markPaidBtn.addEventListener("click", () => {
 });
 
 // ====== FINANCE PANEL ======
-function updateFinancePanel() {
-    const revenue = bookings
-        .filter(b => b.isPaid)
-        .reduce((sum, b) => sum + (Number(b.price) || 0), 0);
+function updateFinanceFilterUI() {
+    financeFilterButtons.forEach(btn => {
+        btn.classList.toggle("is-active", btn.dataset.financeFilter === financeFilterMode);
+    });
 
-    const cost = costs.reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
+    const currentYear = new Date().getFullYear();
+    const titles = {
+        total: "Tổng quan tài chính",
+        month: `Doanh thu theo tháng (${currentYear})`,
+        year: "Doanh thu theo năm"
+    };
+    const revenueLabels = {
+        total: "Tổng doanh thu",
+        month: `Tổng doanh thu (${currentYear})`,
+        year: "Tổng doanh thu"
+    };
+    const chartTitles = {
+        total: "Biểu đồ tổng doanh thu",
+        month: "Biểu đồ doanh thu theo tháng",
+        year: "Biểu đồ doanh thu theo năm"
+    };
+    const chartNotes = {
+        total: "Một cột thể hiện tổng doanh thu (chỉ tính booking đã thanh toán).",
+        month: "Mỗi cột là doanh thu theo từng tháng trong năm hiện tại.",
+        year: "Mỗi cột là tổng doanh thu theo từng năm."
+    };
+
+    if (financeTitleEl) financeTitleEl.textContent = titles[financeFilterMode];
+    if (revenueLabelEl) revenueLabelEl.textContent = revenueLabels[financeFilterMode];
+    if (chartTitleEl) chartTitleEl.textContent = chartTitles[financeFilterMode];
+    if (chartNoteEl) chartNoteEl.textContent = chartNotes[financeFilterMode];
+}
+
+function parseDateParts(isoDate) {
+    if (!isoDate) return null;
+    const [year, month, day] = isoDate.split("-").map(Number);
+    if (!year || !month || !day) return null;
+    return { year, month, day };
+}
+
+function getRevenueGroups() {
+    const paidBookings = bookings.filter(b => b.isPaid);
+    const currentYear = new Date().getFullYear();
+
+    if (financeFilterMode === "month") {
+        const months = Array.from({ length: 12 }, (_, i) => ({
+            label: `T${i + 1}`,
+            value: 0
+        }));
+
+        paidBookings.forEach(b => {
+            const parts = parseDateParts(b.date);
+            if (!parts || parts.year !== currentYear) return;
+            months[parts.month - 1].value += Number(b.price) || 0;
+        });
+
+        const total = months.reduce((sum, item) => sum + item.value, 0);
+        return { groups: months, total };
+    }
+
+    if (financeFilterMode === "year") {
+        const yearMap = {};
+        paidBookings.forEach(b => {
+            const parts = parseDateParts(b.date);
+            if (!parts) return;
+            yearMap[parts.year] = (yearMap[parts.year] || 0) + (Number(b.price) || 0);
+        });
+
+        const years = Object.keys(yearMap).sort((a, b) => Number(a) - Number(b));
+        const groups = years.map(year => ({
+            label: year,
+            value: yearMap[year]
+        }));
+        const total = groups.reduce((sum, item) => sum + item.value, 0);
+        return { groups: groups.length ? groups : [{ label: `${currentYear}`, value: 0 }], total };
+    }
+
+    const totalRevenue = paidBookings.reduce((sum, b) => sum + (Number(b.price) || 0), 0);
+    return { groups: [{ label: "Tổng", value: totalRevenue }], total: totalRevenue };
+}
+
+function getCostTotal() {
+    const currentYear = new Date().getFullYear();
+    return costs.reduce((sum, c) => {
+        const amount = Number(c.amount) || 0;
+        if (financeFilterMode === "month") {
+            const parts = parseDateParts(c.date);
+            if (!parts || parts.year !== currentYear) return sum;
+            return sum + amount;
+        }
+        return sum + amount;
+    }, 0);
+}
+
+function updateFinancePanel() {
+    const { total: revenue } = getRevenueGroups();
+    const cost = getCostTotal();
 
     const profit = revenue - cost;
 
@@ -780,26 +890,11 @@ function updateFinancePanel() {
 function updateChart() {
     chartPlaceholderEl.innerHTML = "";
 
-    // gom doanh thu theo ngày
-    const revenueByDate = {};
-    bookings.forEach(b => {
-        if (!b.isPaid) return;
-        revenueByDate[b.date] = (revenueByDate[b.date] || 0) + (Number(b.price) || 0);
-    });
+    const { groups } = getRevenueGroups();
+    const maxRevenue = Math.max(...groups.map(g => g.value), 1);
 
-    let maxRevenue = 0;
-    Object.values(revenueByDate).forEach(v => { if (v > maxRevenue) maxRevenue = v; });
-    if (maxRevenue === 0) maxRevenue = 1;
-
-    // vẽ 4 cột doanh thu từ hôm nay trở đi
-    const chartDates = [];
-    for (let i = 0; i < VISIBLE_DAYS; i++) {
-        chartDates.push(getDateInfoFromOffset(i));
-    }
-
-    chartDates.forEach(d => {
-        const value = revenueByDate[d.iso] || 0;
-        const heightPercent = Math.round((value / maxRevenue) * 100);
+    groups.forEach(group => {
+        const heightPercent = Math.round((group.value / maxRevenue) * 100);
 
         const bar = document.createElement("div");
         bar.className = "chart-bar";
@@ -810,7 +905,7 @@ function updateChart() {
 
         const label = document.createElement("div");
         label.className = "chart-bar__label";
-        label.textContent = d.day;
+        label.textContent = group.label;
 
         bar.appendChild(fill);
         bar.appendChild(label);
