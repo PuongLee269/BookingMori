@@ -106,10 +106,18 @@
             <!-- ============= SCREEN 3: FINANCE TAB ============= -->
             <section id="screen-finance" class="screen">
                 <div class="card finance-card">
-                    <h2>Tài chính hôm nay</h2>
+                    <h2 id="finance-title">Tổng quan tài chính</h2>
+
+                    <div class="segmented-control" id="finance-filter">
+                        <button class="segmented-control__btn is-active" data-finance-filter="total">
+                            Tổng doanh thu
+                        </button>
+                        <button class="segmented-control__btn" data-finance-filter="month">Theo tháng</button>
+                        <button class="segmented-control__btn" data-finance-filter="year">Theo năm</button>
+                    </div>
 
                     <div class="finance-row">
-                        <span>Doanh thu</span>
+                        <span id="revenue-label">Tổng doanh thu</span>
                         <span id="revenue-amount" class="finance-row__value">0 đ</span>
                     </div>
 
@@ -125,11 +133,13 @@
                 </div>
 
                 <div class="card chart-card">
-                    <h3>Biểu đồ doanh thu theo ngày</h3>
+                    <h3 id="chart-title">Biểu đồ doanh thu</h3>
                     <div id="chart-placeholder" class="chart-placeholder">
                         <!-- js render bars -->
                     </div>
-                    <p class="chart-note">Mỗi cột là doanh thu 1 ngày (chỉ tính các booking đã thanh toán).</p>
+                    <p id="chart-note" class="chart-note">
+                        Mỗi cột là doanh thu (chỉ tính các booking đã thanh toán).
+                    </p>
                 </div>
             </section>
 
