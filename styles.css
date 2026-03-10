@@ -365,6 +365,10 @@ body.app-body {
     font-size: 18px;
 }
 
+.booking-card__deposit {
+    color: #d08a00;
+}
+
 .booking-card__time {
     font-size: 14px;
     color: var(--text-muted);
@@ -594,6 +598,12 @@ body.app-body {
     font-weight: 600;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(87, 120, 62, 0.2);
+}
+
+
+.detail-actions {
+    display: grid;
+    gap: 10px;
 }
 
 .danger-btn {
