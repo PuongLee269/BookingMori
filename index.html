@@ -95,9 +95,14 @@
                         </label>
                     </div>
 
-                    <button class="primary-btn" id="mark-paid-btn">
-                        ✅ Xác nhận đã thanh toán
-                    </button>
+                    <div class="detail-actions">
+                        <button class="secondary-btn" id="mark-deposit-btn">
+                            💰 Đã cọc 50%
+                        </button>
+                        <button class="primary-btn" id="mark-paid-btn">
+                            ✅ Xác nhận đã thanh toán
+                        </button>
+                    </div>
                 </div>
             </section>
         </div>
@@ -364,10 +369,14 @@
                     </label>
                 </div>
 
-                <label class="checkbox checkbox--strong">
-                    <input type="checkbox" id="new-is-paid">
-                    <span>✅ Xác nhận đã thanh toán</span>
-                </label>
+                <div class="field">
+                    <span class="field__label">Trạng thái thanh toán</span>
+                    <select id="new-payment-status" class="field__select">
+                        <option value="unpaid">Chưa thanh toán</option>
+                        <option value="deposit50">Đã cọc 50%</option>
+                        <option value="paid">Đã thanh toán 100%</option>
+                    </select>
+                </div>
 
                 <div class="modal-actions">
                     <button type="button" class="secondary-btn" id="booking-modal-cancel">Huỷ</button>

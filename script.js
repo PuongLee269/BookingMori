@@ -10,7 +10,7 @@ const DEFAULT_BOOKINGS = [
         price: 400000,
         hasVAT: false,
         needSupport: false,
-        isPaid: false
+        paymentStatus: "unpaid"
     },
     {
         id: 2,
@@ -22,7 +22,7 @@ const DEFAULT_BOOKINGS = [
         price: 600000,
         hasVAT: true,
         needSupport: true,
-        isPaid: false
+        paymentStatus: "unpaid"
     },
     {
         id: 3,
@@ -34,7 +34,7 @@ const DEFAULT_BOOKINGS = [
         price: 500000,
         hasVAT: false,
         needSupport: false,
-        isPaid: false
+        paymentStatus: "unpaid"
     }
 ];
 
@@ -74,6 +74,7 @@ const detailNotesEl = document.getElementById("detail-notes");
 const detailPriceEl = document.getElementById("detail-price");
 const detailHasVATEl = document.getElementById("detail-has-vat");
 const detailNeedSupportEl = document.getElementById("detail-need-support");
+const markDepositBtn = document.getElementById("mark-deposit-btn");
 const markPaidBtn = document.getElementById("mark-paid-btn");
 
 const revenueAmountEl = document.getElementById("revenue-amount");
@@ -107,7 +108,7 @@ const priceRuleSelect = document.getElementById("price-rule-select");
 const priceAutoInfoEl = document.getElementById("price-auto-info");
 const newHasVATEl = document.getElementById("new-has-vat");
 const newNeedSupportEl = document.getElementById("new-need-support");
-const newIsPaidEl = document.getElementById("new-is-paid");
+const newPaymentStatusEl = document.getElementById("new-payment-status");
 const newRepeatEnabledEl = document.getElementById("new-repeat-enabled");
 const newRepeatPanel = document.getElementById("repeat-panel");
 const newRepeatIntervalEl = document.getElementById("new-repeat-interval");
@@ -211,7 +212,8 @@ function showScreen(tab) {
 }
 
 function loadPersistedData() {
-    bookings = readFromStorage(STORAGE_KEYS.bookings, DEFAULT_BOOKINGS);
+    bookings = readFromStorage(STORAGE_KEYS.bookings, DEFAULT_BOOKINGS)
+        .map(booking => normalizeBookingPayment(booking));
     costs = readFromStorage(STORAGE_KEYS.costs, []);
     const storedPricing = readFromStorage(STORAGE_KEYS.pricing, DEFAULT_PRICING) || {};
     pricingConfig = {
@@ -222,6 +224,38 @@ function loadPersistedData() {
             rangeOver40: storedPricing.recurringRules?.rangeOver40 ?? DEFAULT_PRICING.recurringRules.rangeOver40
         }
     };
+}
+
+function normalizePaymentStatus(paymentStatus, isPaid) {
+    if (["unpaid", "deposit50", "paid"].includes(paymentStatus)) return paymentStatus;
+    if (typeof isPaid === "boolean") return isPaid ? "paid" : "unpaid";
+    return "unpaid";
+}
+
+function normalizeBookingPayment(booking) {
+    const normalizedStatus = normalizePaymentStatus(booking?.paymentStatus, booking?.isPaid);
+    return {
+        ...booking,
+        paymentStatus: normalizedStatus,
+        isPaid: normalizedStatus === "paid"
+    };
+}
+
+function getPaymentStatusMeta(paymentStatus) {
+    if (paymentStatus === "paid") {
+        return { className: "booking-card__paid", icon: "✔", text: "Đã thanh toán" };
+    }
+    if (paymentStatus === "deposit50") {
+        return { className: "booking-card__deposit", icon: "◐", text: "Đã cọc 50%" };
+    }
+    return { className: "booking-card__unpaid", icon: "✖", text: "Chưa thanh toán" };
+}
+
+function getRecognizedRevenue(price, paymentStatus) {
+    const amount = Number(price) || 0;
+    if (paymentStatus === "paid") return amount;
+    if (paymentStatus === "deposit50") return Math.round(amount * 0.5);
+    return 0;
 }
 
 // ====== DATE STRIP (KHÔNG GIỚI HẠN) ======
@@ -576,6 +610,7 @@ function estimateOccurrencesForForm(start, end) {
         price: 0,
         hasVAT: false,
         needSupport: false,
+        paymentStatus: "unpaid",
         isPaid: false
     };
 
@@ -700,13 +735,14 @@ function renderBookingList() {
     items.forEach(b => {
         const card = document.createElement("div");
         card.className = "booking-card";
+        const paymentMeta = getPaymentStatusMeta(b.paymentStatus);
         card.innerHTML = `
             <div class="booking-card__row">
                 <div class="booking-card__name">${b.name}</div>
                 <div class="booking-card__actions">
                     <button class="booking-card__delete" aria-label="Xóa booking">×</button>
-                    <div class="booking-card__status ${b.isPaid ? "booking-card__paid" : "booking-card__unpaid"}">
-                        ${b.isPaid ? "✔" : "✖"}
+                    <div class="booking-card__status ${paymentMeta.className}" title="${paymentMeta.text}">
+                        ${paymentMeta.icon}
                     </div>
                 </div>
             </div>
@@ -760,7 +796,7 @@ backToBookingBtn.addEventListener("click", () => {
     screenBooking.classList.add("is-active");
 });
 
-markPaidBtn.addEventListener("click", () => {
+function updateCurrentBookingPayment(paymentStatus, successMessage) {
     if (!currentBookingId) return;
     const booking = bookings.find(b => b.id === currentBookingId);
     if (!booking) return;
@@ -769,7 +805,8 @@ markPaidBtn.addEventListener("click", () => {
     booking.price = Number(detailPriceEl.value) || 0;
     booking.hasVAT = detailHasVATEl.checked;
     booking.needSupport = detailNeedSupportEl.checked;
-    booking.isPaid = true;
+    booking.paymentStatus = paymentStatus;
+    booking.isPaid = paymentStatus === "paid";
 
     renderBookingList();
     renderMonthGrid();
@@ -777,7 +814,15 @@ markPaidBtn.addEventListener("click", () => {
     updateChart();
     persistBookings();
 
-    alert("Đã xác nhận thanh toán cho khách này.");
+    alert(successMessage);
+}
+
+markDepositBtn?.addEventListener("click", () => {
+    updateCurrentBookingPayment("deposit50", "Đã cập nhật trạng thái cọc 50% cho booking này.");
+});
+
+markPaidBtn.addEventListener("click", () => {
+    updateCurrentBookingPayment("paid", "Đã xác nhận thanh toán cho khách này.");
 });
 
 // ====== FINANCE PANEL ======
@@ -803,7 +848,7 @@ function updateFinanceFilterUI() {
         year: "Biểu đồ doanh thu theo năm"
     };
     const chartNotes = {
-        total: "Một cột thể hiện tổng doanh thu (chỉ tính booking đã thanh toán).",
+        total: "Một cột thể hiện tổng doanh thu (đã thanh toán 100% + 50% tiền cọc).",
         month: "Mỗi cột là doanh thu theo từng tháng trong năm hiện tại.",
         year: "Mỗi cột là tổng doanh thu theo từng năm."
     };
@@ -822,7 +867,7 @@ function parseDateParts(isoDate) {
 }
 
 function getRevenueGroups() {
-    const paidBookings = bookings.filter(b => b.isPaid);
+    const revenueBookings = bookings.filter(b => ["paid", "deposit50"].includes(b.paymentStatus));
     const currentYear = new Date().getFullYear();
 
     if (financeFilterMode === "month") {
@@ -831,10 +876,10 @@ function getRevenueGroups() {
             value: 0
         }));
 
-        paidBookings.forEach(b => {
+        revenueBookings.forEach(b => {
             const parts = parseDateParts(b.date);
             if (!parts || parts.year !== currentYear) return;
-            months[parts.month - 1].value += Number(b.price) || 0;
+            months[parts.month - 1].value += getRecognizedRevenue(b.price, b.paymentStatus);
         });
 
         const total = months.reduce((sum, item) => sum + item.value, 0);
@@ -843,10 +888,10 @@ function getRevenueGroups() {
 
     if (financeFilterMode === "year") {
         const yearMap = {};
-        paidBookings.forEach(b => {
+        revenueBookings.forEach(b => {
             const parts = parseDateParts(b.date);
             if (!parts) return;
-            yearMap[parts.year] = (yearMap[parts.year] || 0) + (Number(b.price) || 0);
+            yearMap[parts.year] = (yearMap[parts.year] || 0) + getRecognizedRevenue(b.price, b.paymentStatus);
         });
 
         const years = Object.keys(yearMap).sort((a, b) => Number(a) - Number(b));
@@ -858,7 +903,7 @@ function getRevenueGroups() {
         return { groups: groups.length ? groups : [{ label: `${currentYear}`, value: 0 }], total };
     }
 
-    const totalRevenue = paidBookings.reduce((sum, b) => sum + (Number(b.price) || 0), 0);
+    const totalRevenue = revenueBookings.reduce((sum, b) => sum + getRecognizedRevenue(b.price, b.paymentStatus), 0);
     return { groups: [{ label: "Tổng", value: totalRevenue }], total: totalRevenue };
 }
 
@@ -1227,7 +1272,8 @@ bookingForm.addEventListener("submit", (e) => {
         price,
         hasVAT: newHasVATEl.checked,
         needSupport: newNeedSupportEl.checked,
-        isPaid: newIsPaidEl.checked
+        paymentStatus: newPaymentStatusEl?.value || "unpaid",
+        isPaid: (newPaymentStatusEl?.value || "unpaid") === "paid"
     };
 
     const bookingsToAdd = buildRecurringBookings(baseBooking, {
