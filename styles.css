@@ -623,6 +623,16 @@ body.app-body {
     font-size: 14px;
 }
 
+.settings-actions {
+    display: grid;
+    gap: 10px;
+}
+
+.settings-actions .primary-btn,
+.settings-actions .danger-btn {
+    width: 100%;
+}
+
 .pricing-table {
     display: flex;
     flex-direction: column;
