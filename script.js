@@ -74,7 +74,6 @@ const detailNotesEl = document.getElementById("detail-notes");
 const detailPriceEl = document.getElementById("detail-price");
 const detailHasVATEl = document.getElementById("detail-has-vat");
 const detailNeedSupportEl = document.getElementById("detail-need-support");
-const saveBookingDetailBtn = document.getElementById("save-booking-detail-btn");
 const markDepositBtn = document.getElementById("mark-deposit-btn");
 const markPaidBtn = document.getElementById("mark-paid-btn");
 
@@ -121,6 +120,7 @@ const repeatDaysWrapper = document.getElementById("repeat-days");
 const repeatEndRadios = document.querySelectorAll("input[name='repeat-end']");
 const repeatEndDateEl = document.getElementById("repeat-end-date");
 const repeatEndCountEl = document.getElementById("repeat-end-count");
+const saveDataBtn = document.getElementById("save-data-btn");
 const clearDataBtn = document.getElementById("clear-data-btn");
 const settingOddPriceEl = document.getElementById("setting-odd-price");
 const settingRange10to20El = document.getElementById("setting-range-10-20");
@@ -818,17 +818,6 @@ function refreshBookingData() {
     persistBookings();
 }
 
-function saveCurrentBookingDetail({ successMessage } = {}) {
-    const booking = applyCurrentBookingDetailFields();
-    if (!booking) return;
-
-    refreshBookingData();
-
-    if (successMessage) {
-        alert(successMessage);
-    }
-}
-
 function updateCurrentBookingPayment(paymentStatus, successMessage) {
     const booking = applyCurrentBookingDetailFields();
     if (!booking) return;
@@ -840,10 +829,6 @@ function updateCurrentBookingPayment(paymentStatus, successMessage) {
 
     alert(successMessage);
 }
-
-saveBookingDetailBtn.addEventListener("click", () => {
-    saveCurrentBookingDetail({ successMessage: "Đã lưu dữ liệu booking vào máy." });
-});
 
 markDepositBtn?.addEventListener("click", () => {
     updateCurrentBookingPayment("deposit50", "Đã cập nhật trạng thái cọc 50% cho booking này.");
@@ -1021,6 +1006,8 @@ addCostBtn.addEventListener("click", () => {
     updateFinancePanel();
 });
 
+saveDataBtn?.addEventListener("click", saveAllDataToDevice);
+
 clearDataBtn?.addEventListener("click", () => {
     const confirmReset = confirm("Xóa toàn bộ dữ liệu demo và đặt lại? Bạn sẽ mất các chỉnh sửa.");
     if (!confirmReset) return;
@@ -1116,6 +1103,39 @@ function persistCosts() {
 
 function persistPricing() {
     writeToStorage(STORAGE_KEYS.pricing, pricingConfig);
+}
+
+function persistAllData() {
+    persistBookings();
+    persistCosts();
+    persistPricing();
+}
+
+function buildDataExport() {
+    return {
+        app: "BookingMori",
+        exportedAt: new Date().toISOString(),
+        bookings: cloneData(bookings),
+        costs: cloneData(costs),
+        pricing: cloneData(pricingConfig)
+    };
+}
+
+function saveAllDataToDevice() {
+    persistAllData();
+
+    const data = buildDataExport();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `bookingmori-data-${formatLocalISODate(new Date())}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+
+    alert("Đã lưu dữ liệu vào trình duyệt và tải file sao lưu về máy.");
 }
 
 function clearAllData() {
