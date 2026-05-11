@@ -74,6 +74,7 @@ const detailNotesEl = document.getElementById("detail-notes");
 const detailPriceEl = document.getElementById("detail-price");
 const detailHasVATEl = document.getElementById("detail-has-vat");
 const detailNeedSupportEl = document.getElementById("detail-need-support");
+const saveBookingDetailBtn = document.getElementById("save-booking-detail-btn");
 const markDepositBtn = document.getElementById("mark-deposit-btn");
 const markPaidBtn = document.getElementById("mark-paid-btn");
 
@@ -796,26 +797,53 @@ backToBookingBtn.addEventListener("click", () => {
     screenBooking.classList.add("is-active");
 });
 
-function updateCurrentBookingPayment(paymentStatus, successMessage) {
-    if (!currentBookingId) return;
+function applyCurrentBookingDetailFields() {
+    if (!currentBookingId) return null;
     const booking = bookings.find(b => b.id === currentBookingId);
-    if (!booking) return;
+    if (!booking) return null;
 
     booking.notes = detailNotesEl.value.trim();
     booking.price = Number(detailPriceEl.value) || 0;
     booking.hasVAT = detailHasVATEl.checked;
     booking.needSupport = detailNeedSupportEl.checked;
-    booking.paymentStatus = paymentStatus;
-    booking.isPaid = paymentStatus === "paid";
 
+    return booking;
+}
+
+function refreshBookingData() {
     renderBookingList();
     renderMonthGrid();
     updateFinancePanel();
     updateChart();
     persistBookings();
+}
+
+function saveCurrentBookingDetail({ successMessage } = {}) {
+    const booking = applyCurrentBookingDetailFields();
+    if (!booking) return;
+
+    refreshBookingData();
+
+    if (successMessage) {
+        alert(successMessage);
+    }
+}
+
+function updateCurrentBookingPayment(paymentStatus, successMessage) {
+    const booking = applyCurrentBookingDetailFields();
+    if (!booking) return;
+
+    booking.paymentStatus = paymentStatus;
+    booking.isPaid = paymentStatus === "paid";
+
+    refreshBookingData();
 
     alert(successMessage);
 }
+
+saveBookingDetailBtn.addEventListener("click", () => {
+    saveCurrentBookingDetail({ successMessage: "Đã lưu dữ liệu booking vào máy." });
+});
 
 markDepositBtn?.addEventListener("click", () => {
     updateCurrentBookingPayment("deposit50", "Đã cập nhật trạng thái cọc 50% cho booking này.");
